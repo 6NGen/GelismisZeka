@@ -206,8 +206,12 @@ export default function Page() {
 
           {failed.length > 0 && !busy ? (
             <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
+              {/* Dört adım aynı sebeple düşerse mesaj dört kez tekrarlanmasın. */}
               <p className="text-[13px]" style={{ color: "var(--red)" }}>
-                {failed.map((m) => errors[m]).filter(Boolean).join(" ")}
+                {[...new Set(failed.map((m) => errors[m]).filter(Boolean))].join(" ")}
+              </p>
+              <p className="text-[13px] text-muted">
+                Dilerseniz yukarıdaki hazır mevzulardan biriyle devam edebilirsiniz.
               </p>
               <button
                 type="button"

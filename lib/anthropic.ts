@@ -3,7 +3,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 
 import type { ModeKey } from "./modes";
-import { buildUserPrompt, outputSchemaForMode, SYSTEM_PROMPT } from "./prompts";
+import { buildUserPrompt, outputSchemaForMode, RETRY_SUFFIX, systemPromptFor } from "./prompts";
 import { sanitizeModeResult } from "./sanitize";
 import { ModeResultZ, type ErrorCode, type ModeResult } from "./schema";
 
@@ -65,18 +65,25 @@ function alignMizanWord(result: ModeResult): ModeResult {
   };
 }
 
-async function callOnce(mode: ModeKey, topic: string): Promise<ModeResult> {
+async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<ModeResult> {
+  // 03-PROMPTLAR §5: Mîzân'ın sistem promptu ilk üç çağrınınkinden farklıdır.
+  const system = systemPromptFor(mode);
+  // 03-PROMPTLAR §7: tekrar denemede ek talimat kullanıcı promptuna eklenir.
+  const user = isRetry
+    ? `${buildUserPrompt(mode, topic)}\n\n${RETRY_SUFFIX}`
+    : buildUserPrompt(mode, topic);
+
   let message: Anthropic.Message;
   try {
     message = await getClient().messages.create({
       model: MODEL,
       max_tokens: MAX_TOKENS,
-      system: SYSTEM_PROMPT,
+      system,
       output_config: {
         effort: "medium",
         format: { type: "json_schema", schema: outputSchemaForMode(mode) },
       },
-      messages: [{ role: "user", content: buildUserPrompt(mode, topic) }],
+      messages: [{ role: "user", content: user }],
     });
   } catch (err) {
     // Yapılandırma hatası gibi kendi tanımladığımız hatalar olduğu gibi geçer;
@@ -121,15 +128,16 @@ async function callOnce(mode: ModeKey, topic: string): Promise<ModeResult> {
 }
 
 /**
- * Bir adımı çalıştırır. Ayrıştırma/şema hatasında bir kez sessizce tekrar dener;
- * hız sınırı ve bağlantı hatalarında tekrar denemez — bekleme çözüm değildir.
+ * Bir adımı çalıştırır. Ayrıştırma/şema hatasında TEK SEFER, §7'deki ek
+ * talimatla tekrar dener; ikinci deneme de tutmazsa adım hatalı işaretlenir.
+ * Hız sınırı ve bağlantı hatalarında tekrar denemez — bekleme çözüm değildir.
  */
 export async function runStep(mode: ModeKey, topic: string): Promise<ModeResult> {
   try {
     return await callOnce(mode, topic);
   } catch (err) {
     if (err instanceof AnalyzeError && err.code === "PARSE") {
-      return await callOnce(mode, topic);
+      return await callOnce(mode, topic, true);
     }
     throw err;
   }

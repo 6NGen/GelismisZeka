@@ -9,16 +9,9 @@ type Props = {
   onChange: (mode: ModeKey) => void;
 };
 
-const ACCENT: Record<ModeKey, string> = {
-  nedir: "var(--color-step-nedir)",
-  nedegildir: "var(--color-step-nedegildir)",
-  bagli: "var(--color-step-bagli)",
-  mizan: "var(--color-step-mizan)",
-};
-
 export default function ModePicker({ active, available, onChange }: Props) {
   return (
-    <div role="tablist" aria-label="Analiz modu" className="flex flex-wrap gap-2">
+    <div role="tablist" aria-label="Analiz modu" className="flex flex-wrap justify-center gap-2">
       {MODES.map((mode) => {
         const enabled = available[mode];
         const isActive = mode === active;
@@ -29,15 +22,15 @@ export default function ModePicker({ active, available, onChange }: Props) {
             aria-selected={isActive}
             disabled={!enabled}
             onClick={() => onChange(mode)}
-            style={isActive ? { borderColor: ACCENT[mode], color: ACCENT[mode] } : undefined}
-            className={`tr-caps rounded-sm border px-3.5 py-2 text-[0.72rem] transition-colors
-              ${
-                isActive
-                  ? "bg-ink-soft"
-                  : enabled
-                    ? "border-ink-line text-parchment-dim hover:text-parchment"
-                    : "cursor-not-allowed border-ink-line/60 text-parchment-faint opacity-45"
-              }`}
+            lang="tr"
+            style={{
+              background: isActive ? "var(--gold)" : "var(--gold-bg)",
+              color: isActive ? "#fff" : enabled ? "var(--ink)" : "var(--muted)",
+              borderColor: "var(--line)",
+            }}
+            className={`lbl rounded-md border px-3 py-2 transition-colors ${
+              enabled ? "" : "cursor-not-allowed opacity-45"
+            }`}
           >
             {MODE_TABS[mode]}
           </button>
@@ -46,5 +39,3 @@ export default function ModePicker({ active, available, onChange }: Props) {
     </div>
   );
 }
-
-export { ACCENT as MODE_ACCENT };

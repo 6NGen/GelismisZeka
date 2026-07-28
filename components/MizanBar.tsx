@@ -2,40 +2,38 @@
 
 import { mizanWidths, verdict } from "@/lib/modes";
 import type { Mizan } from "@/lib/schema";
+import { MIZAN_KARSI_COLOR, MIZAN_TEZ_COLOR } from "@/lib/theme";
 
 /**
- * Terazi çubuğu — tez ve karşı delilin ağırlıkları.
+ * 04-TASARIM §4.6 — Mîzân çubuğu.
  *
- * Hüküm cümlesi modelden gelmez; sayıdan burada hesaplanır. Ölçek bilerek
- * çıplaktır: iddia zayıfsa çubuk bunu yumuşatmadan gösterir.
+ * Renk tek ayırt edici değildir: altındaki DM Mono satırı "TEZ n" ve
+ * "KARŞI-DÜĞÜM n" yazar (§6). Hüküm cümlesi modelden gelmez, koddan hesaplanır.
  */
-export default function MizanBar({ mizan, accent }: { mizan: Mizan; accent: string }) {
+export default function MizanBar({ mizan }: { mizan: Mizan }) {
   const width = mizanWidths(mizan);
 
   return (
     <div>
-      <div className="flex items-baseline justify-between text-[0.72rem]">
-        <span className="tr-caps text-parchment-faint">Mîzân</span>
-        <span className="text-parchment-dim">
-          Tez {mizan.tez} — Karşı {mizan.karsi}
+      <div
+        className="mizan-bar flex w-full"
+        role="img"
+        aria-label={`Tez ${mizan.tez}, karşı-düğüm ${mizan.karsi}.`}
+      >
+        <div style={{ width: `${width.tez}%`, background: MIZAN_TEZ_COLOR }} />
+        <div style={{ width: `${width.karsi}%`, background: MIZAN_KARSI_COLOR }} />
+      </div>
+
+      <div className="mt-1.5 flex justify-between">
+        <span className="lbl text-[9px]" lang="tr" style={{ color: MIZAN_TEZ_COLOR }}>
+          Tez {mizan.tez}
+        </span>
+        <span className="lbl text-[9px]" lang="tr" style={{ color: MIZAN_KARSI_COLOR }}>
+          Karşı-düğüm {mizan.karsi}
         </span>
       </div>
 
-      <div
-        className="mt-1.5 flex h-2.5 w-full overflow-hidden rounded-full bg-ink"
-        role="img"
-        aria-label={`Tez ağırlığı ${mizan.tez}, karşı ağırlığı ${mizan.karsi}.`}
-      >
-        <div style={{ width: `${width.tez}%`, background: accent }} />
-        <div className="bg-step-nedegildir" style={{ width: `${width.karsi}%` }} />
-      </div>
-
-      <div className="mt-1.5 flex justify-between text-[0.68rem] text-parchment-faint">
-        <span>Tez</span>
-        <span>Karşı</span>
-      </div>
-
-      <p className="mt-3 text-[0.85rem] leading-relaxed text-parchment">{verdict(mizan)}</p>
+      <p className="mt-2.5 text-[12.5px] italic leading-relaxed text-ink">{verdict(mizan)}</p>
     </div>
   );
 }

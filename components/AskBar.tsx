@@ -34,6 +34,7 @@ export default function AskBar({ busy, onSubmit }: Props) {
 
   return (
     <div className="w-full">
+      {/* §5: ≤640px'te giriş satırı dikeye döner */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -52,25 +53,31 @@ export default function AskBar({ busy, onSubmit }: Props) {
           disabled={busy}
           autoComplete="off"
           placeholder="Bir mevzu yazın — örneğin: definecilik"
-          className="min-w-0 flex-1 rounded-sm border border-ink-line bg-ink-soft px-4 py-3 text-parchment
-                     placeholder:text-parchment-faint focus:border-gold-dim focus:outline-none
-                     disabled:opacity-50"
+          style={{ borderColor: "var(--line)", background: "#fff" }}
+          className="min-w-0 flex-1 rounded-md border px-4 py-3 text-[15px] text-ink
+                     placeholder:text-muted focus:border-gold focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={busy}
-          className="tr-caps shrink-0 rounded-sm border border-gold-dim bg-transparent px-6 py-3 text-[0.75rem]
-                     text-gold transition-colors hover:bg-gold hover:text-ink disabled:opacity-40
-                     disabled:hover:bg-transparent disabled:hover:text-gold"
+          lang="tr"
+          style={{ background: "var(--gold)", color: "#fff" }}
+          className="lbl shrink-0 rounded-md px-6 py-3 transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           {busy ? "Analiz ediliyor" : "Analiz et"}
         </button>
       </form>
 
-      {hint ? <p className="mt-2 text-[0.8rem] text-step-nedegildir">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-2 text-[13px]" style={{ color: "var(--red)" }}>
+          {hint}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-[0.75rem] text-parchment-faint">Hazır mevzular:</span>
+        <span className="lbl text-[9px] text-muted" lang="tr">
+          Hazır mevzular
+        </span>
         {EXAMPLES.map((example) => (
           <button
             key={example}
@@ -80,12 +87,16 @@ export default function AskBar({ busy, onSubmit }: Props) {
               setValue(example);
               submit(example);
             }}
-            className="rounded-full border border-ink-line px-3 py-1 text-[0.78rem] text-parchment-dim
-                       transition-colors hover:border-gold-dim hover:text-parchment disabled:opacity-40"
+            style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
+            className="rounded-full border px-3 py-1 text-[13px] text-ink transition-opacity hover:opacity-80 disabled:opacity-40"
           >
             {example}
             {isCached(example) ? (
-              <span className="ml-1.5 text-gold-dim" title="Önbellekte hazır — API çağrısı yapılmaz">
+              <span
+                className="ml-1.5"
+                style={{ color: "var(--gold)" }}
+                title="Önbellekte hazır — API çağrısı yapılmaz"
+              >
                 ●
               </span>
             ) : null}

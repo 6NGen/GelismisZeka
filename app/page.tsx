@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import AskBar from "@/components/AskBar";
-import ModePicker, { MODE_ACCENT } from "@/components/ModePicker";
+import ModePicker from "@/components/ModePicker";
 import ProgressSteps, { type StepState } from "@/components/ProgressSteps";
 import RadialMap from "@/components/RadialMap";
 import SerhPanel from "@/components/SerhPanel";
@@ -11,6 +11,7 @@ import { getCached } from "@/lib/cache";
 import { MODES, type ModeKey } from "@/lib/modes";
 import { safeRich } from "@/lib/sanitize";
 import type { Analysis, AnalyzeResponse } from "@/lib/schema";
+import { branchColor } from "@/lib/theme";
 
 const IDLE_STATES: Record<ModeKey, StepState> = {
   nedir: "idle",
@@ -26,10 +27,13 @@ export default function Page() {
   const [notice, setNotice] = useState<string | null>(null);
   const [mode, setMode] = useState<ModeKey>("nedir");
   const [selected, setSelected] = useState(0);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   /** Art arda gönderimlerde geç gelen cevapların ekranı bozmasını engeller. */
   const runId = useRef(0);
+  /** Panel kapanınca odak buraya döner (04-TASARIM §6). */
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   /**
    * `only` verildiğinde yalnız o modlar yeniden çalışır; başarılı adımların
@@ -41,6 +45,7 @@ export default function Page() {
 
     setBusy(true);
     setNotice(null);
+    setPanelOpen(false);
 
     if (only) {
       setErrors((e) => {
@@ -110,6 +115,11 @@ export default function Page() {
     if (runId.current === id) setBusy(false);
   }, []);
 
+  const closePanel = useCallback(() => {
+    setPanelOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
   const available = useMemo<Record<ModeKey, boolean>>(
     () => ({
       nedir: Boolean(analysis?.nedir),
@@ -121,18 +131,19 @@ export default function Page() {
   );
 
   const result = analysis?.[mode];
-  const accent = MODE_ACCENT[mode];
   const index = result ? Math.min(selected, result.branches.length - 1) : 0;
-  const branch = result?.branches[index];
+  const branch = result?.branches[index] ?? null;
   const anyDone = MODES.some((m) => states[m] === "done");
   const failed = MODES.filter((m) => states[m] === "error");
 
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
+    <main className="mx-auto flex max-w-5xl flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
       <header className="text-center">
-        <p className="tr-caps text-[0.7rem] text-gold-dim">GZ — Gelişmiş Zekâ</p>
-        <h1 className="mt-2 text-3xl sm:text-4xl">Dinamik Analiz</h1>
-        <p className="mx-auto mt-3 max-w-xl text-[0.92rem] leading-relaxed text-parchment-dim">
+        <p className="lbl text-[9px]" style={{ color: "var(--gold)" }} lang="tr">
+          GZ — Gelişmiş Zekâ
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">Dinamik Analiz</h1>
+        <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-muted">
           Bir mevzu yazın. Geometrik Okuma ve Zincir Öğrenme'nin dört adımı sırayla
           işlesin, sonuç radyal bir ilim haritası olarak açılsın.
         </p>
@@ -143,57 +154,50 @@ export default function Page() {
       </section>
 
       {analysis ? (
-        <section className="flex flex-col gap-6">
+        <section className="flex flex-col gap-8">
           <ProgressSteps states={states} />
 
           {notice ? (
-            <p className="mx-auto max-w-2xl rounded-sm border border-ink-line bg-ink-soft px-4 py-3 text-center text-[0.85rem] text-parchment-dim">
+            <p
+              className="mx-auto max-w-2xl rounded-md border px-4 py-3 text-center text-[13px] text-muted"
+              style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
+            >
               {notice}
             </p>
           ) : null}
 
           {anyDone ? (
             <>
-              <div className="flex justify-center">
-                <ModePicker
-                  active={mode}
-                  available={available}
-                  onChange={(next) => {
-                    setMode(next);
-                    setSelected(0);
-                  }}
-                />
-              </div>
+              <ModePicker
+                active={mode}
+                available={available}
+                onChange={(next) => {
+                  setMode(next);
+                  setSelected(0);
+                  setPanelOpen(false);
+                }}
+              />
 
-              {result && branch ? (
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
-                  <div className="flex flex-col gap-5">
-                    <RadialMap
-                      center={analysis.topic}
-                      branches={result.branches}
-                      selected={index}
-                      onSelect={setSelected}
-                      accent={accent}
-                    />
-                    <p
-                      className="mx-auto max-w-xl text-center text-[0.9rem] leading-relaxed text-parchment-dim [&_b]:text-parchment [&_i]:italic"
-                      dangerouslySetInnerHTML={{ __html: safeRich(result.foot) }}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <SerhPanel branch={branch} accent={accent} />
-
-                    {mode === "mizan" ? (
-                      <p className="text-[0.78rem] leading-relaxed text-parchment-faint">
-                        Bu adım, ilk üç adımın çıktısını görmeden ayrı bir çağrıyla üretildi.
-                        Tezi kuran el ile onu yıkmaya çalışan el aynı değildir.
-                      </p>
-                    ) : null}
-                  </div>
+              {result ? (
+                <div className="flex flex-col gap-6">
+                  <RadialMap
+                    topic={analysis.topic}
+                    mode={mode}
+                    branches={result.branches}
+                    selected={index}
+                    onSelect={(i, trigger) => {
+                      triggerRef.current = trigger;
+                      setSelected(i);
+                      setPanelOpen(true);
+                    }}
+                  />
+                  <p
+                    className="mx-auto max-w-2xl text-center text-[13.5px] leading-relaxed text-muted [&_b]:font-semibold [&_b]:text-ink"
+                    dangerouslySetInnerHTML={{ __html: safeRich(result.foot) }}
+                  />
                 </div>
               ) : (
-                <p className="text-center text-[0.9rem] text-parchment-dim">
+                <p className="text-center text-[13px] text-muted">
                   {errors[mode] ?? "Bu adım henüz hazır değil."}
                 </p>
               )}
@@ -202,13 +206,15 @@ export default function Page() {
 
           {failed.length > 0 && !busy ? (
             <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
-              <p className="text-[0.85rem] text-step-nedegildir">
+              <p className="text-[13px]" style={{ color: "var(--red)" }}>
                 {failed.map((m) => errors[m]).filter(Boolean).join(" ")}
               </p>
               <button
                 type="button"
                 onClick={() => runAnalysis(analysis.topic, failed)}
-                className="tr-caps rounded-sm border border-gold-dim px-5 py-2 text-[0.72rem] text-gold transition-colors hover:bg-gold hover:text-ink"
+                lang="tr"
+                style={{ background: "var(--gold)", color: "#fff" }}
+                className="lbl rounded-md px-5 py-2 transition-opacity hover:opacity-90"
               >
                 Tekrar dene
               </button>
@@ -216,6 +222,13 @@ export default function Page() {
           ) : null}
         </section>
       ) : null}
+
+      <SerhPanel
+        branch={branch}
+        color={branchColor(index)}
+        open={panelOpen}
+        onClose={closePanel}
+      />
     </main>
   );
 }

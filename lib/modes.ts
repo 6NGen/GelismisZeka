@@ -11,13 +11,24 @@ import type { Mizan } from "./schema";
 export const MODES = ["nedir", "nedegildir", "bagli", "mizan"] as const;
 export type ModeKey = (typeof MODES)[number];
 
-/** Modun sorduğu soru — ilerleme göstergesinde kullanılır. */
+/** İlerleme göstergesindeki adım adları — 04-TASARIM §4.7. */
 export const MODE_LABELS: Record<ModeKey, string> = {
+  nedir: "Birinci soru — Bu nedir?",
+  nedegildir: "İkinci soru — Bu ne değildir?",
+  bagli: "Üçüncü soru — Bu neye bağlıdır?",
+  mizan: "Mîzân — bağımsız yanlışlayıcı çağrı",
+};
+
+/** Merkez düğümdeki hap rozet: aktif GZ sorusu — 04-TASARIM §4.1. */
+export const MODE_QUESTIONS: Record<ModeKey, string> = {
   nedir: "Bu nedir?",
   nedegildir: "Bu ne değildir?",
   bagli: "Bu neye bağlıdır?",
-  mizan: "Mîzân",
+  mizan: "Bağımsız yanlışlayıcı çağrı",
 };
+
+/** Merkez düğümün adı; Mîzân modunda mevzunun yerine bu yazar. */
+export const MIZAN_CENTER_NAME = "ASİMETRİ TESTİ";
 
 /** Mod sekmesi etiketi. Zaten büyük harfle yazılıdır; CSS ile büyütülmez. */
 export const MODE_TABS: Record<ModeKey, string> = {

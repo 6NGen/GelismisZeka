@@ -130,7 +130,7 @@
         "ar": "الدعوى ٣",
         "word": "Tez 1 — Karşı 8",
         "sentence": "Karşı-düğüm ağır basıyor; ısrar bilgi biriktirmiyor.",
-        "para": "<b>Tez:</b> arama alanı taranırsa kapsam artar. <b>Karşı:</b> her kazı bir öncekinden bağımsızdır ve alan pratikte sınırsızdır, dolayısıyla kapsam hiçbir zaman anlamlı orana ulaşmaz. Bu iddianın asıl işlevi bulmayı sağlamak değil, <b>vazgeçmeyi geciktirmektir</b>.",
+        "para": "<b>Tez:</b> arama alanı taranırsa kapsam artar. <b>Karşı:</b> her kazı bir öncekinden bağımsızdır ve alan pratikte sınırsızdır, dolayısıyla kapsam hiçbir zaman anlamlı orana ulaşmaz. Bu iddianın asıl işlevi bulmayı sağlamak değil, <i>vazgeçmeyi geciktirmektir</i>.",
         "mizan": { "tez": 1, "karsi": 8 }
       }
     ]

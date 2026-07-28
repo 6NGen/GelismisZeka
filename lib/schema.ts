@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MAX_TOPIC, MIN_TOPIC, MODES, hasControlChars } from "./modes";
+import { MAX_TOPIC, MIN_TOPIC, MODES, hasControlChars, type ModeKey } from "./modes";
 
 export type { ModeKey } from "./modes";
 
@@ -42,6 +42,111 @@ export const ModeResultZ = z.object({
 export type Mizan = z.infer<typeof MizanZ>;
 export type Branch = z.infer<typeof BranchZ>;
 export type ModeResult = z.infer<typeof ModeResultZ>;
+
+/* ────────────────────────────────────────────────────────────
+   İçerik kuralları — sunucuda ayrıca doğrulanır
+
+   Yapılandırılmış çıktı yalnız BİÇİMİ garanti eder: alanın var olduğunu ve
+   tipini. "En fazla 15 kelime" ya da "2-3 cümle" gibi kurallar şemayla
+   söylenemez, bu yüzden burada elle sayılır. Model bu kuralları promptta
+   görür; buradaki denetim onun tuttuğunun kanıtıdır.
+   ──────────────────────────────────────────────────────────── */
+
+/** Etiketleri atıp kelime sayar. */
+export function wordCount(s: string): number {
+  const t = s.replace(/<[^>]*>/g, " ").trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
+/**
+ * Cümle sayar. Nokta/ünlem/soru işaretinin ardından boşluk ya da metin sonu
+ * aranır; böylece "3.5" gibi ondalıklar cümle sonu sayılmaz.
+ */
+export function sentenceCount(s: string): number {
+  const t = s.replace(/<[^>]*>/g, " ");
+  const hits = t.match(/[.!?…]+(?=\s|$)/g);
+  if (hits) return hits.length;
+  return t.trim() ? 1 : 0;
+}
+
+/** Açılan <b> etiketi sayısı. */
+export function boldCount(s: string): number {
+  return (s.match(/<b>/gi) ?? []).length;
+}
+
+const MAX_SENTENCE_WORDS = 15;
+const MAX_NAME_WORDS = 4;
+const PARA_SENTENCES = { min: 2, max: 3 };
+const MAX_BOLD = 2;
+
+/**
+ * Moda göre içerik kuralları uygulayan şema.
+ *
+ * `name` ve `word` kısıtları yalnız ilk üç moda uygulanır: bu kurallar ortak
+ * sistem promptunda tanımlıdır (03-PROMPTLAR §1) ve Mîzân'ın kendi sistem
+ * promptunda yer almaz. Mîzân'da `name` iddianın tırnak içindeki kendisidir,
+ * `word` ise sunucuda sayılardan türetilir — ikisi de kelime sayısıyla
+ * sınırlanamaz.
+ */
+export function modeResultSchema(mode: ModeKey) {
+  const isMizan = mode === "mizan";
+
+  return ModeResultZ.superRefine((result, ctx) => {
+    result.branches.forEach((b, i) => {
+      const at = (field: string) => ["branches", i, field];
+
+      if (!isMizan) {
+        if (wordCount(b.name) > MAX_NAME_WORDS) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: at("name"),
+            message: `name en fazla ${MAX_NAME_WORDS} kelime olmalı (${wordCount(b.name)}).`,
+          });
+        }
+        if (wordCount(b.word) !== 1) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: at("word"),
+            message: `word tek bir anahtar kelime olmalı (${wordCount(b.word)}).`,
+          });
+        }
+      }
+
+      if (wordCount(b.sentence) > MAX_SENTENCE_WORDS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: at("sentence"),
+          message: `sentence en fazla ${MAX_SENTENCE_WORDS} kelime olmalı (${wordCount(b.sentence)}).`,
+        });
+      }
+
+      const sentences = sentenceCount(b.para);
+      if (sentences < PARA_SENTENCES.min || sentences > PARA_SENTENCES.max) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: at("para"),
+          message: `para ${PARA_SENTENCES.min}-${PARA_SENTENCES.max} cümle olmalı (${sentences}).`,
+        });
+      }
+
+      if (boldCount(b.para) > MAX_BOLD) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: at("para"),
+          message: `para en fazla ${MAX_BOLD} adet <b> vurgusu taşıyabilir (${boldCount(b.para)}).`,
+        });
+      }
+
+      if (isMizan && !b.mizan) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: at("mizan"),
+          message: "Mîzân modunda her dal tez/karsi taşımalı.",
+        });
+      }
+    });
+  });
+}
 
 /* ────────────────────────────────────────────────────────────
    API sözleşmesi — 01-MİMARİ §3

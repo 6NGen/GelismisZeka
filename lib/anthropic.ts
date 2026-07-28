@@ -1,11 +1,12 @@
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
+import type { z } from "zod";
 
 import type { ModeKey } from "./modes";
 import { buildUserPrompt, outputSchemaForMode, RETRY_SUFFIX, systemPromptFor } from "./prompts";
 import { sanitizeModeResult } from "./sanitize";
-import { ModeResultZ, type ErrorCode, type ModeResult } from "./schema";
+import { modeResultSchema, type ErrorCode, type ModeResult } from "./schema";
 
 const MODEL = process.env.GZ_MODEL ?? "claude-sonnet-5";
 const MAX_TOKENS = 8000;
@@ -43,6 +44,17 @@ export function extractJson(raw: string): unknown {
   return JSON.parse(t);
 }
 
+/**
+ * Doğrulama hatasını tek cümleye indirger. Ayrıntı sunucuda kalır; istemciye
+ * yalnız hangi alanın neden reddedildiği gider — ham model çıktısı gitmez.
+ */
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) return "Model çıktısı beklenen şemaya uymadı.";
+  const path = issue.path.join(".");
+  return `Model çıktısı şemaya uymadı${path ? ` (${path})` : ""}: ${issue.message}`;
+}
+
 function textOf(message: Anthropic.Message): string {
   return message.content
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -51,12 +63,14 @@ function textOf(message: Anthropic.Message): string {
 }
 
 /**
- * Mîzân modunda KELİME katmanı sayıların birebir yansımasıdır
- * (02-VERİ-ŞEMASI §5). Modelin yazdığı metne değil, tarttığı sayıya güvenilir:
- * böylece "Tez 3 — Karşı 7" yazıp {tez:1, karsi:9} veren bir çıktı ekranda
- * kendisiyle çelişemez.
+ * Mîzân'da KELİME katmanı modele yazdırılmaz; `tez` ve `karsi` sayılarından
+ * türetilir. Tek doğruluk kaynağı sayılardır: model "Tez 3 — Karşı 7" yazıp
+ * {tez:1, karsi:9} verse bile ekran kendisiyle çelişemez.
+ *
+ * Prompt, 03-PROMPTLAR §5 gereği birebir korunduğu için modelden hâlâ bu alan
+ * istenir; yazdığı değer burada koşulsuz olarak değiştirilir.
  */
-function alignMizanWord(result: ModeResult): ModeResult {
+function deriveMizanWord(result: ModeResult): ModeResult {
   return {
     ...result,
     branches: result.branches.map((b) =>
@@ -112,19 +126,26 @@ async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<
     throw new AnalyzeError("PARSE", "Model çıktısı JSON olarak okunamadı.");
   }
 
-  const first = ModeResultZ.safeParse(parsed);
+  // Biçim + içerik kuralları birlikte doğrulanır: yapılandırılmış çıktı yalnız
+  // alanların varlığını garanti eder, "en fazla 15 kelime" gibi kuralları değil.
+  const schema = modeResultSchema(mode);
+
+  const first = schema.safeParse(parsed);
   if (!first.success) {
-    throw new AnalyzeError("PARSE", "Model çıktısı beklenen şemaya uymadı.");
+    throw new AnalyzeError("PARSE", firstIssue(first.error));
   }
 
-  // Temizlik bir alanı boşaltabilir (yalnız etiketten ibaret bir paragraf gibi).
-  // Bu yüzden temizlenmiş nesne bir kez daha doğrulanır.
-  const cleaned = ModeResultZ.safeParse(sanitizeModeResult(first.data));
+  // Temizlik bir alanı boşaltabilir ve kelime/cümle sayısını değiştirebilir;
+  // KELİME katmanı da burada sayılardan türetilir. Bu yüzden ortaya çıkan
+  // nesne bir kez daha aynı şemadan geçirilir.
+  const finalized = deriveMizanWord(sanitizeModeResult(first.data));
+
+  const cleaned = schema.safeParse(finalized);
   if (!cleaned.success) {
-    throw new AnalyzeError("PARSE", "Model çıktısı temizlendikten sonra geçersiz kaldı.");
+    throw new AnalyzeError("PARSE", firstIssue(cleaned.error));
   }
 
-  return mode === "mizan" ? alignMizanWord(cleaned.data) : cleaned.data;
+  return cleaned.data;
 }
 
 /**

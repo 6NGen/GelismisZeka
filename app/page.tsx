@@ -3,15 +3,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import AskBar from "@/components/AskBar";
-import ModePicker, { STEP_ACCENT } from "@/components/ModePicker";
+import ModePicker, { MODE_ACCENT } from "@/components/ModePicker";
 import ProgressSteps, { type StepState } from "@/components/ProgressSteps";
-import RadialMap, { type MapNode } from "@/components/RadialMap";
-import SerhPanel, { type SerhSection } from "@/components/SerhPanel";
+import RadialMap from "@/components/RadialMap";
+import SerhPanel from "@/components/SerhPanel";
 import { getCached } from "@/lib/cache";
-import type { Analysis, AnalyzeResponse, BranchResult, MizanResult } from "@/lib/schema";
-import { STEPS, isMizanResult, type Step } from "@/lib/steps";
+import { MODES, type ModeKey } from "@/lib/modes";
+import { safeRich } from "@/lib/sanitize";
+import type { Analysis, AnalyzeResponse } from "@/lib/schema";
 
-const IDLE_STATES: Record<Step, StepState> = {
+const IDLE_STATES: Record<ModeKey, StepState> = {
   nedir: "idle",
   nedegildir: "idle",
   bagli: "idle",
@@ -20,10 +21,10 @@ const IDLE_STATES: Record<Step, StepState> = {
 
 export default function Page() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [states, setStates] = useState<Record<Step, StepState>>(IDLE_STATES);
-  const [errors, setErrors] = useState<Partial<Record<Step, string>>>({});
+  const [states, setStates] = useState<Record<ModeKey, StepState>>(IDLE_STATES);
+  const [errors, setErrors] = useState<Partial<Record<ModeKey, string>>>({});
   const [notice, setNotice] = useState<string | null>(null);
-  const [mode, setMode] = useState<Step>("nedir");
+  const [mode, setMode] = useState<ModeKey>("nedir");
   const [selected, setSelected] = useState(0);
   const [busy, setBusy] = useState(false);
 
@@ -31,12 +32,12 @@ export default function Page() {
   const runId = useRef(0);
 
   /**
-   * `only` verildiğinde yalnız o adımlar yeniden çalışır; başarılı adımların
+   * `only` verildiğinde yalnız o modlar yeniden çalışır; başarılı adımların
    * sonucu korunur. Tekrar denemenin ödenmiş çağrıları yeniden ödememesi için.
    */
-  const runAnalysis = useCallback(async (topic: string, only?: Step[]) => {
+  const runAnalysis = useCallback(async (topic: string, only?: ModeKey[]) => {
     const id = ++runId.current;
-    const targets = only ?? STEPS;
+    const targets = only ?? MODES;
 
     setBusy(true);
     setNotice(null);
@@ -44,12 +45,12 @@ export default function Page() {
     if (only) {
       setErrors((e) => {
         const next = { ...e };
-        for (const step of only) delete next[step];
+        for (const m of only) delete next[m];
         return next;
       });
       setStates((s) => {
         const next = { ...s };
-        for (const step of only) next[step] = "idle";
+        for (const m of only) next[m] = "idle";
         return next;
       });
     } else {
@@ -109,7 +110,7 @@ export default function Page() {
     if (runId.current === id) setBusy(false);
   }, []);
 
-  const available = useMemo<Record<Step, boolean>>(
+  const available = useMemo<Record<ModeKey, boolean>>(
     () => ({
       nedir: Boolean(analysis?.nedir),
       nedegildir: Boolean(analysis?.nedegildir),
@@ -120,38 +121,11 @@ export default function Page() {
   );
 
   const result = analysis?.[mode];
-  const accent = STEP_ACCENT[mode];
-
-  const nodes = useMemo<MapNode[]>(() => {
-    if (!result) return [];
-    if (isMizanResult(result)) {
-      return result.branches.map((b, i) => ({
-        key: `mizan-${i}`,
-        label: `${i + 1}. İddia`,
-        badge: `${Math.round(b.weight)}/100`,
-      }));
-    }
-    return result.branches.map((b, i) => ({ key: `${mode}-${i}`, label: b.title }));
-  }, [result, mode]);
-
-  const serh = useMemo(() => {
-    if (!result || nodes.length === 0) return null;
-    const index = Math.min(selected, result.branches.length - 1);
-
-    if (isMizanResult(result)) {
-      const b = (result as MizanResult).branches[index];
-      const sections: SerhSection[] = [
-        { label: "Yanlışlama testi", text: b.test },
-        { label: "Sonuç", text: b.verdict },
-      ];
-      return { word: `${index + 1}. İddia`, sentence: b.claim, sections, weight: b.weight };
-    }
-
-    const b = (result as BranchResult).branches[index];
-    return { word: b.title, sentence: b.gloss, sections: [{ text: b.detail }], weight: undefined };
-  }, [result, nodes.length, selected]);
-
-  const anyDone = STEPS.some((s) => states[s] === "done");
+  const accent = MODE_ACCENT[mode];
+  const index = result ? Math.min(selected, result.branches.length - 1) : 0;
+  const branch = result?.branches[index];
+  const anyDone = MODES.some((m) => states[m] === "done");
+  const failed = MODES.filter((m) => states[m] === "error");
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
@@ -191,32 +165,24 @@ export default function Page() {
                 />
               </div>
 
-              {result ? (
+              {result && branch ? (
                 <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
                   <div className="flex flex-col gap-5">
                     <RadialMap
                       center={analysis.topic}
-                      nodes={nodes}
-                      selected={Math.min(selected, nodes.length - 1)}
+                      branches={result.branches}
+                      selected={index}
                       onSelect={setSelected}
                       accent={accent}
                     />
-                    <p className="mx-auto max-w-xl text-center text-[0.9rem] leading-relaxed text-parchment-dim">
-                      <span className="tr-caps mr-2 text-[0.68rem] text-parchment-faint">Ayak</span>
-                      {result.foot}
-                    </p>
+                    <p
+                      className="mx-auto max-w-xl text-center text-[0.9rem] leading-relaxed text-parchment-dim [&_b]:text-parchment [&_i]:italic"
+                      dangerouslySetInnerHTML={{ __html: safeRich(result.foot) }}
+                    />
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    {serh ? (
-                      <SerhPanel
-                        word={serh.word}
-                        sentence={serh.sentence}
-                        sections={serh.sections}
-                        weight={serh.weight}
-                        accent={accent}
-                      />
-                    ) : null}
+                    <SerhPanel branch={branch} accent={accent} />
 
                     {mode === "mizan" ? (
                       <p className="text-[0.78rem] leading-relaxed text-parchment-faint">
@@ -234,22 +200,14 @@ export default function Page() {
             </>
           ) : null}
 
-          {STEPS.some((s) => states[s] === "error") && !busy ? (
+          {failed.length > 0 && !busy ? (
             <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
               <p className="text-[0.85rem] text-step-nedegildir">
-                {STEPS.filter((s) => states[s] === "error")
-                  .map((s) => errors[s])
-                  .filter(Boolean)
-                  .join(" ")}
+                {failed.map((m) => errors[m]).filter(Boolean).join(" ")}
               </p>
               <button
                 type="button"
-                onClick={() =>
-                  runAnalysis(
-                    analysis.topic,
-                    STEPS.filter((s) => states[s] === "error"),
-                  )
-                }
+                onClick={() => runAnalysis(analysis.topic, failed)}
                 className="tr-caps rounded-sm border border-gold-dim px-5 py-2 text-[0.72rem] text-gold transition-colors hover:bg-gold hover:text-ink"
               >
                 Tekrar dene

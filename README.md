@@ -61,21 +61,54 @@ components/
   SerhPanel.tsx         kelime → cümle → paragraf
   MizanBar.tsx          tez/karşı ağırlık çubuğu
 lib/
-  prompts.ts            dört adımın prompt tanımları + çıktı sözleşmesi
+  prompts.ts            dört modun prompt tanımları + çıktı sözleşmesi
   schema.ts             zod şemaları + TS tipleri
-  steps.ts              adım sabitleri (zod'suz — istemci paketi için)
+  modes.ts              mod sabitleri, mîzân hükmü (zod'suz — istemci paketi için)
   anthropic.ts          API çağrısı, JSON ayıklama, tek tekrar
   cache.ts              önbellekli örnekler
-  sanitize.ts           model çıktısının temizlenmesi
+  sanitize.ts           model çıktısının temizlenmesi + safeRich
   rate-limit.ts         IP başına 20 istek/saat
   turkish.ts            toLocaleUpperCase("tr") sarmalayıcıları
 data/cached/
   definecilik.json      elle yazılmış tam örnek
 ```
 
-`lib/schema.ts` ile `lib/steps.ts` ayrımı bilinçlidir: bileşenlerin ihtiyaç
+`lib/schema.ts` ile `lib/modes.ts` ayrımı bilinçlidir: bileşenlerin ihtiyaç
 duyduğu çalışma-zamanı sabitleri zod'suz dosyada durur, böylece doğrulama
 kitaplığı istemci paketine girmez.
+
+---
+
+## Veri şeması
+
+Dört modun tamamı aynı dal biçimini kullanır; şerh üç katman hâlinde açılır:
+**KELİME → CÜMLE → PARAGRAF**. Yalnız mîzân modunda dala `mizan` alanı eklenir.
+
+```ts
+interface Branch {
+  name: string;      // dal adı — en fazla 4 kelime
+  ar?: string;       // Arapça terim (emin değilse boş)
+  word: string;      // KELİME — tek anahtar kelime
+  sentence: string;  // CÜMLE — tek cümle, ≤15 kelime
+  para: string;      // PARAGRAF — 2-3 cümle, sınırlı <b>/<i>
+  mizan?: { tez: number; karsi: number };  // 0-10
+}
+```
+
+İstenen dal sayısı 4 / 4 / 5 / 3'tür; model sapabildiği için arayüz 3–6 arası
+her sayıyı çizer.
+
+### Mîzân hükmü modele sorulmaz
+
+Model yalnızca `tez` ve `karsi` sayılarını verir. "Hangi taraf ağır basıyor"
+cümlesi `lib/modes.ts` içindeki `verdict()` ile istemcide hesaplanır — tartıyı
+yapanın kendi tartısını yorumlamaması için. Çubuk genişliği
+`tez / (tez + karsi)` oranıdır; payda `|| 1` ile korunur, bu yüzden `0 – 0`
+girdisi NaN üretmez.
+
+Aynı gerekçeyle mîzân modunda `word` alanı sunucuda sayılardan türetilir:
+model "Tez 3 — Karşı 7" yazıp `{tez: 1, karsi: 9}` verirse ekran kendisiyle
+çelişmesin diye sayı esas alınır.
 
 ---
 
@@ -95,9 +128,27 @@ kitaplığı istemci paketine girmez.
 ```
 
 Route sırasıyla: girdiyi doğrular (2–120 karakter, kontrol karakteri yok),
-hız sınırını uygular, modeli çağırır, cevabı zod ile doğrular, sanitize eder.
-Şema tutmazsa **bir kez** sessizce tekrar dener; hız sınırı ve bağlantı
-hatalarında tekrar denemez — beklemek çözüm değildir.
+hız sınırını uygular, modeli çağırır, cevabı zod ile doğrular, sanitize eder ve
+temizlenmiş nesneyi **bir kez daha** doğrular — temizlik bir alanı boşaltmışsa
+bu yakalanır. Şema tutmazsa bir kez sessizce tekrar dener; hız sınırı ve
+bağlantı hatalarında tekrar denemez — beklemek çözüm değildir.
+
+---
+
+## HTML güvenliği
+
+`para` ve `foot` alanlarında yalnız `<b>` ve `<i>` serbesttir; `name`, `word`,
+`sentence`, `ar` tam kaçışlı basılır. İki bağımsız katman vardır:
+
+1. **Sunucu** (`sanitizeModeResult`) — izinli etiketleri küçük harfe indirger,
+   sonra kalan bütün etiketleri siler. `<script>`, `<img onerror>`,
+   `<b onclick>`, `<iframe>` buradan geçemez.
+2. **İstemci** (`safeRich`) — basmadan önce her şeyi kaçışlar, ardından yalnız
+   `<b>`/`<i>` çiftlerini geri açar. Son kapı budur; `dangerouslySetInnerHTML`
+   yalnızca bu fonksiyonun çıktısıyla kullanılır.
+
+Birinci katman atlansa ikincisi hâlâ tutar. Düşmanca model çıktısıyla
+sınanmıştır: betik çalışmaz, olay işleyicisi kalmaz, `<b>`/`<i>` korunur.
 
 ---
 

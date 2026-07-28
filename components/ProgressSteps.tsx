@@ -1,6 +1,6 @@
 "use client";
 
-import { STEP_LABELS, STEPS, type Step } from "@/lib/steps";
+import { MODES, MODE_LABELS, type ModeKey } from "@/lib/modes";
 
 export type StepState = "idle" | "running" | "done" | "error";
 
@@ -18,19 +18,19 @@ const TEXT: Record<StepState, string> = {
   error: "text-step-nedegildir",
 };
 
-export default function ProgressSteps({ states }: { states: Record<Step, StepState> }) {
+export default function ProgressSteps({ states }: { states: Record<ModeKey, StepState> }) {
   return (
     <ol className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
-      {STEPS.map((step, i) => {
-        const state = states[step];
+      {MODES.map((mode, i) => {
+        const state = states[mode];
         return (
-          <li key={step} className="flex items-center gap-2.5">
+          <li key={mode} className="flex items-center gap-2.5">
             <span
               aria-hidden
               className={`h-2 w-2 shrink-0 rounded-full border transition-colors ${DOT[state]}`}
             />
             <span className={`text-[0.8rem] transition-colors ${TEXT[state]}`}>
-              <span className="text-parchment-faint">{i + 1}.</span> {STEP_LABELS[step]}
+              <span className="text-parchment-faint">{i + 1}.</span> {MODE_LABELS[mode]}
               {state === "error" ? " — alınamadı" : ""}
             </span>
           </li>

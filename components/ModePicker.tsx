@@ -1,15 +1,15 @@
 "use client";
 
-import { STEP_TABS, STEPS, type Step } from "@/lib/steps";
+import { MODES, MODE_TABS, type ModeKey } from "@/lib/modes";
 
 type Props = {
-  active: Step;
-  /** Verisi gelmemiş veya hata almış adımlar pasif gösterilir. */
-  available: Record<Step, boolean>;
-  onChange: (step: Step) => void;
+  active: ModeKey;
+  /** Verisi gelmemiş veya hata almış modlar pasif gösterilir. */
+  available: Record<ModeKey, boolean>;
+  onChange: (mode: ModeKey) => void;
 };
 
-const ACCENT: Record<Step, string> = {
+const ACCENT: Record<ModeKey, string> = {
   nedir: "var(--color-step-nedir)",
   nedegildir: "var(--color-step-nedegildir)",
   bagli: "var(--color-step-bagli)",
@@ -19,17 +19,17 @@ const ACCENT: Record<Step, string> = {
 export default function ModePicker({ active, available, onChange }: Props) {
   return (
     <div role="tablist" aria-label="Analiz modu" className="flex flex-wrap gap-2">
-      {STEPS.map((step) => {
-        const enabled = available[step];
-        const isActive = step === active;
+      {MODES.map((mode) => {
+        const enabled = available[mode];
+        const isActive = mode === active;
         return (
           <button
-            key={step}
+            key={mode}
             role="tab"
             aria-selected={isActive}
             disabled={!enabled}
-            onClick={() => onChange(step)}
-            style={isActive ? { borderColor: ACCENT[step], color: ACCENT[step] } : undefined}
+            onClick={() => onChange(mode)}
+            style={isActive ? { borderColor: ACCENT[mode], color: ACCENT[mode] } : undefined}
             className={`tr-caps rounded-sm border px-3.5 py-2 text-[0.72rem] transition-colors
               ${
                 isActive
@@ -39,7 +39,7 @@ export default function ModePicker({ active, available, onChange }: Props) {
                     : "cursor-not-allowed border-ink-line/60 text-parchment-faint opacity-45"
               }`}
           >
-            {STEP_TABS[step]}
+            {MODE_TABS[mode]}
           </button>
         );
       })}
@@ -47,4 +47,4 @@ export default function ModePicker({ active, available, onChange }: Props) {
   );
 }
 
-export { ACCENT as STEP_ACCENT };
+export { ACCENT as MODE_ACCENT };

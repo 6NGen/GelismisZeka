@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { EXAMPLES, isCached } from "@/lib/cache";
-import { MAX_TOPIC, MIN_TOPIC, hasControlChars } from "@/lib/steps";
+import { MAX_TOPIC, MIN_TOPIC, hasControlChars } from "@/lib/modes";
 
 type Props = {
   busy: boolean;

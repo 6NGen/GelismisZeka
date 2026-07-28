@@ -2,9 +2,10 @@ import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
 
-import { buildUserPrompt, outputSchemaForStep, SYSTEM_PROMPT } from "./prompts";
-import { sanitizeDeep } from "./sanitize";
-import { schemaForStep, type ErrorCode, type Step, type StepResult } from "./schema";
+import type { ModeKey } from "./modes";
+import { buildUserPrompt, outputSchemaForMode, SYSTEM_PROMPT } from "./prompts";
+import { sanitizeModeResult } from "./sanitize";
+import { ModeResultZ, type ErrorCode, type ModeResult } from "./schema";
 
 const MODEL = process.env.GZ_MODEL ?? "claude-sonnet-5";
 const MAX_TOKENS = 8000;
@@ -49,7 +50,22 @@ function textOf(message: Anthropic.Message): string {
     .join("");
 }
 
-async function callOnce(step: Step, topic: string): Promise<StepResult> {
+/**
+ * Mîzân modunda KELİME katmanı sayıların birebir yansımasıdır
+ * (02-VERİ-ŞEMASI §5). Modelin yazdığı metne değil, tarttığı sayıya güvenilir:
+ * böylece "Tez 3 — Karşı 7" yazıp {tez:1, karsi:9} veren bir çıktı ekranda
+ * kendisiyle çelişemez.
+ */
+function alignMizanWord(result: ModeResult): ModeResult {
+  return {
+    ...result,
+    branches: result.branches.map((b) =>
+      b.mizan ? { ...b, word: `Tez ${b.mizan.tez} — Karşı ${b.mizan.karsi}` } : b,
+    ),
+  };
+}
+
+async function callOnce(mode: ModeKey, topic: string): Promise<ModeResult> {
   let message: Anthropic.Message;
   try {
     message = await getClient().messages.create({
@@ -58,9 +74,9 @@ async function callOnce(step: Step, topic: string): Promise<StepResult> {
       system: SYSTEM_PROMPT,
       output_config: {
         effort: "medium",
-        format: { type: "json_schema", schema: outputSchemaForStep(step) },
+        format: { type: "json_schema", schema: outputSchemaForMode(mode) },
       },
-      messages: [{ role: "user", content: buildUserPrompt(step, topic) }],
+      messages: [{ role: "user", content: buildUserPrompt(mode, topic) }],
     });
   } catch (err) {
     // Yapılandırma hatası gibi kendi tanımladığımız hatalar olduğu gibi geçer;
@@ -89,24 +105,31 @@ async function callOnce(step: Step, topic: string): Promise<StepResult> {
     throw new AnalyzeError("PARSE", "Model çıktısı JSON olarak okunamadı.");
   }
 
-  const result = schemaForStep(step).safeParse(parsed);
-  if (!result.success) {
+  const first = ModeResultZ.safeParse(parsed);
+  if (!first.success) {
     throw new AnalyzeError("PARSE", "Model çıktısı beklenen şemaya uymadı.");
   }
 
-  return sanitizeDeep(result.data);
+  // Temizlik bir alanı boşaltabilir (yalnız etiketten ibaret bir paragraf gibi).
+  // Bu yüzden temizlenmiş nesne bir kez daha doğrulanır.
+  const cleaned = ModeResultZ.safeParse(sanitizeModeResult(first.data));
+  if (!cleaned.success) {
+    throw new AnalyzeError("PARSE", "Model çıktısı temizlendikten sonra geçersiz kaldı.");
+  }
+
+  return mode === "mizan" ? alignMizanWord(cleaned.data) : cleaned.data;
 }
 
 /**
  * Bir adımı çalıştırır. Ayrıştırma/şema hatasında bir kez sessizce tekrar dener;
  * hız sınırı ve bağlantı hatalarında tekrar denemez — bekleme çözüm değildir.
  */
-export async function runStep(step: Step, topic: string): Promise<StepResult> {
+export async function runStep(mode: ModeKey, topic: string): Promise<ModeResult> {
   try {
-    return await callOnce(step, topic);
+    return await callOnce(mode, topic);
   } catch (err) {
     if (err instanceof AnalyzeError && err.code === "PARSE") {
-      return await callOnce(step, topic);
+      return await callOnce(mode, topic);
     }
     throw err;
   }

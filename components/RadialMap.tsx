@@ -1,19 +1,13 @@
 "use client";
 
-export type MapNode = {
-  key: string;
-  /** Dal başlığı — kelime katmanı. */
-  label: string;
-  /** Mîzân modunda ağırlık rozeti gibi kısa ek bilgi. */
-  badge?: string;
-};
+import type { Branch } from "@/lib/schema";
 
 type Props = {
   center: string;
-  nodes: MapNode[];
+  branches: Branch[];
   selected: number;
   onSelect: (index: number) => void;
-  /** Etkin adımın rengi (CSS renk değeri). */
+  /** Etkin modun rengi (CSS renk değeri). */
   accent: string;
 };
 
@@ -27,30 +21,17 @@ function position(index: number, count: number): { x: number; y: number } {
   };
 }
 
-export default function RadialMap({ center, nodes, selected, onSelect, accent }: Props) {
-  const points = nodes.map((_, i) => position(i, nodes.length));
+export default function RadialMap({ center, branches, selected, onSelect, accent }: Props) {
+  const points = branches.map((_, i) => position(i, branches.length));
 
   return (
     <div className="relative mx-auto aspect-square w-full max-w-[34rem]">
       {/* Bağ çizgileri — düğümlerin altında kalır. */}
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 h-full w-full"
-        aria-hidden
-        focusable="false"
-      >
-        <circle
-          cx="50"
-          cy="50"
-          r={RADIUS}
-          fill="none"
-          stroke={accent}
-          strokeOpacity="0.14"
-          strokeWidth="0.3"
-        />
+      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden focusable="false">
+        <circle cx="50" cy="50" r={RADIUS} fill="none" stroke={accent} strokeOpacity="0.14" strokeWidth="0.3" />
         {points.map((p, i) => (
           <line
-            key={nodes[i].key}
+            key={i}
             x1="50"
             y1="50"
             x2={p.x}
@@ -73,12 +54,12 @@ export default function RadialMap({ center, nodes, selected, onSelect, accent }:
       </div>
 
       {/* Dallar. */}
-      {nodes.map((node, i) => {
+      {branches.map((branch, i) => {
         const p = points[i];
         const isActive = i === selected;
         return (
           <button
-            key={node.key}
+            key={i}
             type="button"
             aria-pressed={isActive}
             onClick={() => onSelect(i)}
@@ -95,10 +76,10 @@ export default function RadialMap({ center, nodes, selected, onSelect, accent }:
                   : "border-ink-line bg-ink text-parchment-dim hover:border-gold-dim hover:text-parchment"
               }`}
           >
-            {node.label}
-            {node.badge ? (
+            {branch.name}
+            {branch.mizan ? (
               <span className="mt-1 block text-[0.7rem]" style={{ color: accent }}>
-                {node.badge}
+                {branch.mizan.tez} — {branch.mizan.karsi}
               </span>
             ) : null}
           </button>

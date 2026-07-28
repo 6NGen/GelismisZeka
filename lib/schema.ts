@@ -1,66 +1,50 @@
 import { z } from "zod";
 
-import { hasControlChars, MAX_TOPIC, MIN_TOPIC, STEPS } from "./steps";
+import { MAX_TOPIC, MIN_TOPIC, MODES, hasControlChars } from "./modes";
 
-export type { Step } from "./steps";
+export type { ModeKey } from "./modes";
 
 /* ────────────────────────────────────────────────────────────
-   Dal şemaları
+   Dal şeması — 02-VERİ-ŞEMASI §1–2
 
-   İlk üç adım aynı dal biçimini kullanır: kelime → cümle → paragraf.
-   Mîzân farklıdır; bir iddia ve onu yıkabilecek testi taşır.
+   Üç katman: KELİME → CÜMLE → PARAGRAF. Aynı biçim dört modda da geçerlidir;
+   mîzân modunda yalnızca `mizan` alanı eklenir.
    ──────────────────────────────────────────────────────────── */
 
-const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
-
-export const BranchSchema = z.object({
-  title: nonEmpty(60),
-  gloss: nonEmpty(240),
-  detail: nonEmpty(1200),
+const MizanZ = z.object({
+  /** Destekleyen delilin ağırlığı, 0–10. */
+  tez: z.number().min(0).max(10),
+  /** Çürüten delilin ağırlığı, 0–10. */
+  karsi: z.number().min(0).max(10),
 });
 
-export const MizanBranchSchema = z.object({
-  /** Sınanan iddia. */
-  claim: nonEmpty(240),
-  /** Bu iddiayı yanlışlayacak gözlem — asimetri testinin kendisi. */
-  test: nonEmpty(600),
-  /** Testin sonucu: iddia ayakta mı, kısmen mi, düştü mü. */
-  verdict: nonEmpty(600),
-  /** İddianın testten sonra kalan ağırlığı, 0–100. */
-  weight: z.number().min(0).max(100),
+export const BranchZ = z.object({
+  /** Dal adı — en fazla 4 kelime. */
+  name: z.string().min(1).max(80),
+  /** Arapça terim. Model emin değilse boş bırakır. */
+  ar: z.string().max(40).optional().default(""),
+  /** KELİME katmanı — tek anahtar kelime. */
+  word: z.string().min(1).max(40),
+  /** CÜMLE katmanı — tek cümle, ≤15 kelime. */
+  sentence: z.string().min(1).max(200),
+  /** PARAGRAF katmanı — 2–3 cümle, sınırlı <b>/<i>. */
+  para: z.string().min(1).max(900),
+  /** Yalnız mîzân modunda bulunur. */
+  mizan: MizanZ.optional(),
 });
 
-export type Branch = z.infer<typeof BranchSchema>;
-export type MizanBranch = z.infer<typeof MizanBranchSchema>;
+export const ModeResultZ = z.object({
+  foot: z.string().max(300),
+  /** İstenen sayı 4/4/5/3'tür; model sapabilir, arayüz 3–6 arasını çizer. */
+  branches: z.array(BranchZ).min(3).max(6),
+});
+
+export type Mizan = z.infer<typeof MizanZ>;
+export type Branch = z.infer<typeof BranchZ>;
+export type ModeResult = z.infer<typeof ModeResultZ>;
 
 /* ────────────────────────────────────────────────────────────
-   Adım çıktısı
-
-   Dal sayıları promptta kesin verilir (4 / 4 / 5 / 3) ama doğrulama
-   bilerek toleranslıdır: modelin bir dal fazla vermesi analizi çöpe
-   atmayı hak etmez. Kısmi başarı tam başarısızlıktan iyidir.
-   ──────────────────────────────────────────────────────────── */
-
-export const BranchResultSchema = z.object({
-  foot: nonEmpty(400),
-  branches: z.array(BranchSchema).min(2).max(8),
-});
-
-export const MizanResultSchema = z.object({
-  foot: nonEmpty(400),
-  branches: z.array(MizanBranchSchema).min(2).max(5),
-});
-
-export type BranchResult = z.infer<typeof BranchResultSchema>;
-export type MizanResult = z.infer<typeof MizanResultSchema>;
-export type StepResult = BranchResult | MizanResult;
-
-export function schemaForStep(step: (typeof STEPS)[number]) {
-  return step === "mizan" ? MizanResultSchema : BranchResultSchema;
-}
-
-/* ────────────────────────────────────────────────────────────
-   API sözleşmesi
+   API sözleşmesi — 01-MİMARİ §3
    ──────────────────────────────────────────────────────────── */
 
 export const AnalyzeRequestSchema = z.object({
@@ -70,7 +54,7 @@ export const AnalyzeRequestSchema = z.object({
     .min(MIN_TOPIC, `Mevzu en az ${MIN_TOPIC} karakter olmalı.`)
     .max(MAX_TOPIC, `Mevzu en fazla ${MAX_TOPIC} karakter olabilir.`)
     .refine((s) => !hasControlChars(s), "Mevzu geçersiz karakter içeriyor."),
-  step: z.enum(STEPS, { errorMap: () => ({ message: "Geçersiz analiz adımı." }) }),
+  step: z.enum(MODES, { errorMap: () => ({ message: "Geçersiz analiz adımı." }) }),
 });
 
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
@@ -78,14 +62,14 @@ export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
 export type ErrorCode = "RATE" | "PARSE" | "UPSTREAM" | "INPUT";
 
 export type AnalyzeResponse =
-  | { ok: true; data: StepResult }
+  | { ok: true; data: ModeResult }
   | { ok: false; error: string; code: ErrorCode };
 
 /** Dört adımın tamamı — istemcide birleştirilen nesne. */
-export type Analysis = {
+export interface Analysis {
   topic: string;
-  nedir?: BranchResult;
-  nedegildir?: BranchResult;
-  bagli?: BranchResult;
-  mizan?: MizanResult;
-};
+  nedir?: ModeResult;
+  nedegildir?: ModeResult;
+  bagli?: ModeResult;
+  mizan?: ModeResult;
+}

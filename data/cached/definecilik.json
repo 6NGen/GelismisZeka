@@ -1,0 +1,106 @@
+{
+  "topic": "Definecilik",
+  "nedir": {
+    "foot": "Definecilik, bir yer iddiasını işaret okumasıyla kuran ve onu ancak geri dönüşsüz bir kazıyla sınayabilen, karşılığı belirsiz bir beklenti işidir.",
+    "branches": [
+      {
+        "title": "Yer İddiası",
+        "gloss": "Definecilik özünde tek bir iddiadır: şu noktanın altında şu şey vardır.",
+        "detail": "Her definecilik vakası, ne kadar süslenirse süslensin, bir yer iddiasına indirgenir. İddia dar olduğu ölçüde tehlikelidir: bir tepenin altı denmez, şu kayanın üç adım kuzeyi denir. Bu darlık iddiayı güçlü göstermez, yalnızca sınanabilir yapar. Mevzunun cevheri de buradadır; yerin belirliliği, gömünün varlığından bağımsız olarak iddiaya bir kesinlik görüntüsü verir."
+      },
+      {
+        "title": "İşaret Okuma",
+        "gloss": "Taş, oyuk, çizik ve kaya biçimleri anlam taşıyan bir yazı gibi okunur.",
+        "detail": "Definecilik doğadaki biçimleri kasıtlı işaret sayarak başlar. Bir kayadaki çukur yağmurun eseri de olabilir, birinin bıraktığı iz de; okuma, ikisi arasında ayrım yapmadan ikincisini seçer. Bu seçim tek başına hata değildir, ama sınanmadığında yöntem olmaktan çıkar. İşaret okuması definecilikte kanıt yerine geçer, oysa kendisi kanıtlanması gereken şeydir."
+      },
+      {
+        "title": "Kazı Eylemi",
+        "gloss": "İddiayı sınamanın tek yolu toprağı açmaktır ve bu açış geri alınamaz.",
+        "detail": "Definecilikte düşünce ile eylem arasında ara basamak yoktur; iddia doğrudan kürekle test edilir. Kazı, yanlış çıktığında iddiayı çürütmekle kalmaz, sınanan yeri de yok eder. Bu yüzden hata maliyeti simetrik değildir: doğru çıkarsa bir nesne kazanılır, yanlış çıkarsa hem emek hem de o yerin geri kalan bilgisi kaybedilir. Mevzuyu ayrı kılan da bu geri dönüşsüzlüktür."
+      },
+      {
+        "title": "Beklenti Ekonomisi",
+        "gloss": "Zaman, para ve emek, büyüklüğü de olasılığı da bilinmeyen bir ödüle bağlanır.",
+        "detail": "Definecilik bir hesap işidir ama hesabın iki tarafı da karanlıktır. Ödülün ne olduğu bilinmez, çıkma ihtimali hiç bilinmez. Buna rağmen harcanan kaynak somuttur ve birikir. Beklentinin kendisi zamanla yatırımı meşrulaştıran şeye dönüşür: ne kadar çok kazılmışsa vazgeçmek o kadar zorlaşır."
+      }
+    ]
+  },
+  "nedegildir": {
+    "foot": "Dört ayrımın ortak ölçüsü şudur: bir uğraş bilgi mi üretiyor, yoksa yalnızca nesne mi arıyor — ve iddiasını yanlışlanabilir kılıyor mu?",
+    "branches": [
+      {
+        "title": "Arkeoloji",
+        "gloss": "Arkeoloji nesneyi bulmak için değil, bulunduğu bağlamı okumak için kazar.",
+        "detail": "Karışma kolaydır, çünkü ikisi de toprağı açar ve ikisi de eski nesne çıkarır. Ayrım eylemin kendisinde değil, neyin değerli sayıldığındadır: arkeolog için bir çömleğin hangi katmanda, hangi nesnelerin yanında durduğu çömleğin kendisinden değerlidir. Defineci bu ilişkiyi kaydetmeden nesneyi alır ve böylece bilgiyi yok eder. Aynı çukur, birinde belge üretir, diğerinde belgeyi siler."
+      },
+      {
+        "title": "Maden Aramacılığı",
+        "gloss": "Maden arama, işaret yorumuna değil ölçülebilir jeolojik modele dayanır.",
+        "detail": "İkisi de yerin altında bir şey arar ve ikisi de yanılabilir, bu yüzden benzeşirler. Fark, tahminin nereden geldiğindedir: maden aramada bir sondaj noktası katman verisinden, kimyasal analizden ve önceki sondajlardan çıkar, yanlış çıktığında model güncellenir. Definecilikte yanlış çıkan bir kazı çoğu zaman işareti değil, okumayı yanlış saydırır ve arayış yerini değiştirerek sürer. Biri hatadan öğrenir, diğeri hatayı soğurur."
+      },
+      {
+        "title": "Sembol Bilgisi",
+        "gloss": "Semboller gerçekten anlam taşır; definecilik ise anlamın ne olduğunu peşinen bilir.",
+        "detail": "Bu, ayırt edilmesi en zor olanıdır, çünkü definecilik gerçek bir alandan ödünç alır. Yazıtlar, mezar taşı motifleri ve dini semboller bir dile aittir ve okunabilirler. Ancak sembol bilgisinde işaretin anlamı araştırma sonunda bulunur; definecilikte ise her işaretin anlamı baştan bellidir ve tektir: gömü. Anlamın sabitlenmiş olması, okumayı okuma olmaktan çıkarır."
+      },
+      {
+        "title": "Şans Oyunu",
+        "gloss": "Kumarda olasılık bilinir ve hesaplanabilir; definecilikte olasılığın kendisi bilinmez.",
+        "detail": "Definecilik sık sık bir bahis gibi anlatılır, ama bu benzetme ona hak etmediği bir netlik verir. Bir zar oyununda kazanma ihtimali bellidir ve oyuncu kaybettiğinde bunu bilerek kaybeder. Definecilikte ne kaç kazının kaç bulguyla sonuçlandığı, ne de bir işaretin ne sıklıkla gömüye çıktığı bilinir. Bu yüzden definecilik kötü bir bahis değildir; oranı hiç kurulmamış bir bahistir."
+      }
+    ]
+  },
+  "bagli": {
+    "foot": "Beş bağ tek bir soruda birleşir: elimizdeki işaret, doğanın mı yoksa bir insanın mı eseridir — ve bunu kazmadan önce nasıl bilebiliriz?",
+    "branches": [
+      {
+        "title": "Jeoloji",
+        "gloss": "Bir oyuğun aşınmayla mı yoksa elle mi açıldığını yalnızca yer bilgisi ayırt eder.",
+        "detail": "Definecilikteki işaretlerin büyük bölümü kaya yüzeyindedir ve kaya yüzeyi doğal olarak şekillenir. Erozyon, donma çözülme döngüsü ve kimyasal aşınma, insan eli izlenimi veren biçimler üretir. Bu süreçler bilinmezse her çukur kasıtlı, her çatlak yön gösterici sayılır. Jeoloji bilinmediğinde yapılan hata rastlantısal değildir; her zaman aynı yöne, gömü olduğu yönüne sapar."
+      },
+      {
+        "title": "Tarih",
+        "gloss": "Kimin, hangi dönemde, neden bir şey gömdüğü bilinmeden yer iddiası kurulamaz.",
+        "detail": "Gömü, boşlukta olan bir davranış değildir; belirli dönemlerde belirli sebeplerle yapılır. Bir bölgede o dönemde kimlerin yaşadığı, ne tür bir servetin taşınabilir olduğu ve hangi tehdit karşısında saklama ihtiyacı doğduğu tarihsel bilgidir. Bu bilgi olmadan kurulan senaryolar birbirinin yerine geçebilir hale gelir. Tarih bilinmezse iddia her yere uyar, ve her yere uyan iddia hiçbir yeri göstermez."
+      },
+      {
+        "title": "Yazıt Bilgisi",
+        "gloss": "Bir işaretin hangi alfabeye ve hangi yüzyıla ait olduğunu okumak ayrı bir uzmanlıktır.",
+        "detail": "Taş üzerindeki bir harf ya da damga, ait olduğu yazı geleneği içinde anlam kazanır. Aynı biçim bir dönemde harf, başka bir dönemde sahiplik damgası, bazen de sınır işareti olabilir. Bu ayrımlar öğrenilmeden yapılan okuma, işareti çoğu zaman hiç var olmamış bir alfabeye bağlar. Yazıt bilgisi eksikse ortaya çıkan şey yanlış bir çeviri değil, kendi kendine üretilmiş bir metindir."
+      },
+      {
+        "title": "Hukuk",
+        "gloss": "İzinsiz kazı bir arayış değil, tanımı gereği suçtur ve mülkiyet devletin elindedir.",
+        "detail": "Kültür varlıkları mevzuatı, toprağın altındaki tarihi buluntuları özel mülkiyet dışında tutar. Bu, definecilik için ikincil bir ayrıntı değil, faaliyetin sonucunu doğrudan belirleyen çerçevedir: aranan şey bulunsa dahi bulana ait olmaz. Hukuk bilinmediğinde hesap, gerçekte var olmayan bir ödül üzerine kurulur. Böylece hem ihtimal hem de karşılık tarafı aynı anda yanlış hesaplanmış olur."
+      },
+      {
+        "title": "İhtimal Hesabı",
+        "gloss": "Taban oran ve seçim yanlılığı bilinmeden hiçbir işaret kanıt sayılamaz.",
+        "detail": "Bir işaretin gömüye işaret etme ihtimalini bilmek için, o işaretin gömü olmayan yerlerde ne sıklıkta bulunduğunu da bilmek gerekir. Definecilikte yalnızca ilk taraf konuşulur, ikincisi hiç sorulmaz. Ayrıca anlatılan hikayeler doğal olarak bulunan vakalardan derlenir; bulunamayan binlerce kazı hiç anlatılmaz. Bu iki eksik bir araya geldiğinde, işe yaramayan bir yöntem işe yarıyor gibi görünür."
+      }
+    ]
+  },
+  "mizan": {
+    "foot": "Üç tartının ortak sonucu şudur: mevzunun en zayıf zemini, işaret ile gömü arasındaki bağın bugüne dek hiç sınanmamış olmasıdır.",
+    "branches": [
+      {
+        "claim": "Kayalardaki işaretler gömünün yerini gösterir.",
+        "test": "Bu iddia doğruysa, işaret bulunan yerlerde kazı sonucu gömü çıkma oranının, rastgele seçilmiş yerlerdekinden belirgin biçimde yüksek olması gerekir. Yanlışsa iki oran birbirine eşit çıkar. Bunu ölçmek için işaret bulunan ve bulunmayan yerlerin kazı sonuçlarının birlikte kaydedilmesi yeterlidir.",
+        "verdict": "İddia bu testi geçemez, çünkü test hiç yapılmamıştır: işaretsiz yerlerin sonuçları hiçbir zaman kaydedilmemiştir. Dahası aynı biçimler jeolojik olarak kendiliğinden oluşabildiği için, işaretin varlığı ek bir bilgi taşımaz. Elde kalan tek dayanak, sonradan seçilmiş başarı hikayeleridir.",
+        "weight": 12
+      },
+      {
+        "claim": "Geçmişte insanlar servetlerini toprağa gömerdi.",
+        "test": "Bu iddia yanlışsa, tarihsel kayıtlarda ve arkeolojik buluntularda gömülmüş değerli eşya birikimlerine hiç rastlanmaması gerekirdi. Savaş ve göç dönemlerine ait sikke definelerinin belgelenmiş olması, iddianın bu haliyle yanlışlanmadığını gösterir.",
+        "verdict": "İddia ayakta kalır, ancak tek başına hiçbir kazıyı gerekçelendirmez. Doğru olan genel önerme, herhangi bir belirli noktaya dair bir sonuç vermez; bu iddiadan yer iddiasına geçiş mantıksal bir sıçramadır. Ayakta kalan şey davranışın varlığıdır, aranan yerin doğruluğu değil.",
+        "weight": 72
+      },
+      {
+        "claim": "Yeterince uzun süre ve yeterince çok yer kazan sonunda bulur.",
+        "test": "Bu iddia doğruysa, kazı sayısı arttıkça bulma oranının da artması gerekir. Yanlışsa, yüzlerce kazı yapmış kişilerin sonuçları hiç kazmamış olanlardan farksız çıkar. Uzun süredir uğraşan kişilerin dökümü tutulduğunda cevap doğrudan görünür.",
+        "verdict": "İddia düşer, çünkü her kazı bir öncekinden bağımsızdır ve arama alanı pratikte sınırsızdır. Israrın kendisi bir bilgi biriktirmez; yalnızca harcanan kaynağı büyütür. Bu iddianın asıl işlevi bulmayı sağlamak değil, vazgeçmeyi geciktirmektir.",
+        "weight": 8
+      }
+    ]
+  }
+}

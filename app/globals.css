@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────
+   Tasarım token'ları
+
+   Mürekkep ve kağıt. Koyu zemin, sıcak parşömen metin, tek bir altın
+   vurgu. Her adımın kendi rengi vardır; harita mod değiştirdiğinde
+   renk değişir, biçim değişmez.
+   ──────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-ink: #12100e;
+  --color-ink-soft: #1b1815;
+  --color-ink-line: #2e2822;
+
+  --color-parchment: #ece3d2;
+  --color-parchment-dim: #a99f8d;
+  --color-parchment-faint: #6f6759;
+
+  --color-gold: #c8a257;
+  --color-gold-dim: #8a6f3a;
+
+  --color-step-nedir: #7fa88b;
+  --color-step-nedegildir: #b8735e;
+  --color-step-bagli: #6f8cae;
+  --color-step-mizan: #c8a257;
+
+  --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+  --font-sans: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  /* Etkin adımın rengi. ModePicker bunu gövde üzerinde değiştirir. */
+  --accent: var(--color-step-nedir);
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: var(--color-parchment);
+}
+
+body {
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ölçülü bir doku: düz siyah yerine hafif bir kağıt hissi. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(200, 162, 87, 0.09), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(111, 140, 174, 0.06), transparent 55%);
+}
+
+/* Küçük büyük harf başlıklar. `lang="tr"` olmadan tarayıcı i → I yapar. */
+.tr-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+::selection {
+  background: var(--color-gold-dim);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 
+import AltBilgi from "@/components/AltBilgi";
 import AskBar from "@/components/AskBar";
 import ModePicker from "@/components/ModePicker";
 import ProgressSteps, { type StepState } from "@/components/ProgressSteps";
@@ -140,12 +141,13 @@ export default function Page() {
     <main className="mx-auto flex max-w-5xl flex-col gap-10 px-5 py-10 sm:px-8 sm:py-14">
       <header className="text-center">
         <p className="lbl text-[9px]" style={{ color: "var(--gold)" }} lang="tr">
-          GZ — Gelişmiş Zekâ
+          GZ · Gelişmiş Zekâ
         </p>
         <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">Dinamik Analiz</h1>
+        {/* 06-İLKELER §6: "cevap" değil harita, "sonuç" değil başlangıç. */}
         <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-muted">
           Bir mevzu yazın. Geometrik Okuma ve Zincir Öğrenme'nin dört adımı sırayla
-          işlesin, sonuç radyal bir ilim haritası olarak açılsın.
+          işlesin, radyal bir ilim haritası olarak açılsın — yürünecek bir başlangıç.
         </p>
       </header>
 
@@ -226,6 +228,9 @@ export default function Page() {
           ) : null}
         </section>
       ) : null}
+
+      {/* 06-İLKELER §5: harita altında kalıcı — kaldırılamaz. */}
+      <AltBilgi />
 
       <SerhPanel
         branch={branch}

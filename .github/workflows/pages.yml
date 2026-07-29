@@ -1,0 +1,57 @@
+name: GitHub Pages — statik tanıtım
+
+# Pages sunucu çalıştırmaz: bu iş akışı yalnız önbellekli örnekleri açan
+# statik tanıtım çıktısını yayınlar. Canlı analiz (/api/analyze) bu sürümde
+# yoktur ve hiçbir API anahtarı gerekmez.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/gz-dinamik-analiz-app-1wm1jz
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Aynı anda tek yayın; devam eden yayın iptal edilmez.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Depo adı değişirse basePath da değişmeli; ikisi burada bağlanır.
+      - name: Statik çıktıyı üret
+        run: npm run build:static
+        env:
+          GZ_BASE_PATH: /${{ github.event.repository.name }}
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

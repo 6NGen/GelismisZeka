@@ -31,6 +31,43 @@ uygulama açılır — önbellekli örnekler model çağrısı yapmadan çalış
 
 ---
 
+## İki derleme kipi
+
+| Komut | Ne üretir | Canlı analiz |
+|---|---|---|
+| `npm run build` | Tam uygulama (sunucu + `/api/analyze`) | Var |
+| `npm run build:static` | `out/` — GitHub Pages için statik tanıtım | **Yok** |
+
+Statik kip, `output: "export"` sunucu route'larıyla çalışmadığı için `app/api`
+dizinini derleme süresince ağacın dışına alır ve iş bitince yerine koyar.
+Bu sürümde yalnız önbellekli örnekler açılır; yeni bir mevzu yazıldığında
+kullanıcıya canlı analizin kapalı olduğu açıkça söylenir.
+
+**Statik tanıtımın avantajı:** ortada API anahtarı da açık uç nokta da yoktur,
+dolayısıyla maliyet riski taşımaz.
+
+`.github/workflows/pages.yml` bu çıktıyı yayınlar. Depo ayarlarında
+**Settings → Pages → Source: GitHub Actions** seçili olmalıdır. Adres
+`https://<kullanıcı>.github.io/<depo>/` biçimindedir ve `basePath` depo adından
+otomatik türetilir.
+
+---
+
+## Yayın (tam sürüm) ve maliyet uyarısı
+
+Canlı analizin çalıştığı tam sürüm bir sunucu ister (Vercel vb.). Basmadan önce:
+
+- `ANTHROPIC_API_KEY` platformun **ortam değişkeni** olarak tanımlanmalıdır;
+  `.env.local` deploy edilmez ve `.gitignore`'dadır.
+- **Hız sınırı süreç belleğindedir.** Sunucusuz ortamlarda her örnek kendi
+  sayacını tutar ve örnekler yenilendikçe sayaç sıfırlanır; yani "IP başına
+  20/saat" pratikte "örnek başına 20/saat"e dönüşür. Her analiz 4 model
+  çağrısıdır. Halka açık bir adreste bu, doğrudan bir maliyet açığıdır.
+- Faz 2'ye (paylaşımlı Redis sayacı) kadar erişimi kısıtlı tutmak — deploy
+  koruması ve sağlayıcı tarafında harcama tavanı — önerilir.
+
+---
+
 ## Kritik mimari kural — çift çağrılı Mîzân
 
 Dördüncü adım, ilk üç adımın çıktısını **görmeden** çalışan bağımsız bir API

@@ -14,6 +14,12 @@ import { safeRich } from "@/lib/sanitize";
 import type { Analysis, AnalyzeResponse } from "@/lib/schema";
 import { branchColor } from "@/lib/theme";
 
+/**
+ * Statik tanıtım derlemesinde sunucu yoktur: `/api/analyze` mevcut değildir.
+ * Bu kipte canlı analiz denenmez; kullanıcıya neden çalışmadığı açıkça söylenir.
+ */
+const IS_STATIC = process.env.NEXT_PUBLIC_GZ_STATIC === "1";
+
 const IDLE_STATES: Record<ModeKey, StepState> = {
   nedir: "idle",
   nedegildir: "idle",
@@ -70,6 +76,16 @@ export default function Page() {
         setAnalysis(cached);
         setStates({ nedir: "done", nedegildir: "done", bagli: "done", mizan: "done" });
         setNotice("Bu mevzu önbellekte hazırdı — model çağrısı yapılmadı.");
+        setBusy(false);
+        return;
+      }
+
+      if (IS_STATIC) {
+        setAnalysis(null);
+        setNotice(
+          "Bu tanıtım sürümü sunucusuz çalışır — canlı analiz kapalıdır. " +
+            "Hazır mevzulardan birini seçerseniz haritası önbellekten açılır.",
+        );
         setBusy(false);
         return;
       }
@@ -155,18 +171,19 @@ export default function Page() {
         <AskBar busy={busy} onSubmit={runAnalysis} />
       </section>
 
+      {/* Bilgi notu analiz açılmasa da görünmeli: statik kipte analiz hiç başlamaz. */}
+      {notice ? (
+        <p
+          className="mx-auto max-w-2xl rounded-md border px-4 py-3 text-center text-[13px] text-muted"
+          style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
+        >
+          {notice}
+        </p>
+      ) : null}
+
       {analysis ? (
         <section className="flex flex-col gap-8">
           <ProgressSteps states={states} />
-
-          {notice ? (
-            <p
-              className="mx-auto max-w-2xl rounded-md border px-4 py-3 text-center text-[13px] text-muted"
-              style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
-            >
-              {notice}
-            </p>
-          ) : null}
 
           {anyDone ? (
             <>

@@ -1,7 +1,11 @@
 import "server-only";
 
 /**
- * Bellek içi hız sınırı — IP başına saatte 20 istek.
+ * Bellek içi hız sınırı — IP başına saatte 20 istek (varsayılan).
+ *
+ * Bir analiz 4 istektir; yani varsayılan tavan saatte 5 analiz eder.
+ * `GZ_RATE_LIMIT` ile değiştirilebilir: 4'ün katları vermek anlamlıdır,
+ * aksi halde saatin son analizi ortasından kesilir.
  *
  * Sınır süreç başınadır: birden çok sunucu örneği çalışıyorsa gerçek tavan
  * örnek sayısıyla çarpılır. MVP için yeterli; Faz 2'de Redis'e taşınacak.
@@ -9,7 +13,13 @@ import "server-only";
  */
 
 const WINDOW_MS = 60 * 60 * 1000;
-const LIMIT = 20;
+
+const DEFAULT_LIMIT = 20;
+
+function limit(): number {
+  const raw = Number(process.env.GZ_RATE_LIMIT);
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_LIMIT;
+}
 
 const hits = new Map<string, number[]>();
 
@@ -34,6 +44,7 @@ export function checkRateLimit(key: string): RateVerdict {
     lastSweep = now;
   }
 
+  const LIMIT = limit();
   const times = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
 
   if (times.length >= LIMIT) {

@@ -3,6 +3,7 @@ import "server-only";
 import { ApiError, GoogleGenAI } from "@google/genai";
 import type { z } from "zod";
 
+import { claimCall } from "./budget";
 import type { ModeKey } from "./modes";
 import { buildUserPrompt, outputSchemaForMode, RETRY_SUFFIX, systemPromptFor } from "./prompts";
 import { sanitizeModeResult } from "./sanitize";
@@ -97,6 +98,15 @@ async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<
   const user = isRetry
     ? `${buildUserPrompt(mode, topic)}\n\n${RETRY_SUFFIX}`
     : buildUserPrompt(mode, topic);
+
+  // Günlük tavan burada uygulanır: sayılması gereken şey istek değil, dışarı
+  // çıkan model çağrısıdır — §7 tekrarı dâhil.
+  if (!claimCall()) {
+    throw new AnalyzeError(
+      "RATE",
+      "Bugünkü analiz kotası doldu — yarın yenilenir. Hazır mevzular çalışmaya devam eder.",
+    );
+  }
 
   let text: string | undefined;
   let finishReason: string | undefined;

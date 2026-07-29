@@ -29,6 +29,9 @@ uygulama açılır — önbellekli örnekler model çağrısı yapmadan çalış
 |---|---|---|
 | `GEMINI_API_KEY` | Canlı analiz için evet | — |
 | `GZ_MODEL` | Hayır | `gemini-2.5-flash` |
+| `GZ_DAILY_CALL_CAP` | Hayır | `200` |
+| `GZ_RATE_LIMIT` | Hayır | `20` |
+| `GZ_CACHE_TTL_HOURS` | Hayır | `24` |
 
 Sağlayıcıya bağlı tek dosya `lib/model.ts`'tir; promptlar, şema, içerik
 kuralları ve Mîzân yalıtımı sağlayıcıdan bağımsızdır.
@@ -63,12 +66,39 @@ Canlı analizin çalıştığı tam sürüm bir sunucu ister (Vercel vb.). Basma
 
 - `GEMINI_API_KEY` platformun **ortam değişkeni** olarak tanımlanmalıdır;
   `.env.local` deploy edilmez ve `.gitignore`'dadır.
-- **Hız sınırı süreç belleğindedir.** Sunucusuz ortamlarda her örnek kendi
-  sayacını tutar ve örnekler yenilendikçe sayaç sıfırlanır; yani "IP başına
-  20/saat" pratikte "örnek başına 20/saat"e dönüşür. Her analiz 4 model
-  çağrısıdır. Halka açık bir adreste bu, doğrudan bir maliyet açığıdır.
-- Faz 2'ye (paylaşımlı Redis sayacı) kadar erişimi kısıtlı tutmak — deploy
-  koruması ve sağlayıcı tarafında harcama tavanı — önerilir.
+
+### Kota koruması — üç katman
+
+Bir analiz **4 model çağrısı** eder. Halka açık bir adreste ücretsiz katmanın
+bir günde tükenmemesi için üç ayrı katman vardır; üçü farklı şeyi korur:
+
+| Katman | Dosya | Neyi durdurur |
+|---|---|---|
+| Sonuç önbelleği | `lib/result-cache.ts` | Aynı mevzunun tekrar tekrar sorulmasını |
+| Günlük çağrı tavanı | `lib/budget.ts` | **Toplam** tüketimi |
+| IP başına hız sınırı | `lib/rate-limit.ts` | Tek bir ziyaretçinin aşırıya kaçmasını |
+
+**Sonuç önbelleği** en çok kazandıran katmandır: gerçek trafikte aynı birkaç
+mevzu tekrar tekrar sorulur ve ikinci sorudan itibaren model çağrısı sıfırdır.
+Anahtar `adım | küçük harfli mevzu`, ömrü varsayılan 24 saat.
+
+**Günlük tavan** her model çağrısında artan bir sayaçtır — §7 tekrarı da
+sayılır, çünkü sağlayıcı tarafında da sayılıyor. Dolduğunda uygulama çökmez:
+`RATE` döner, kullanıcı hazır örneklere yönlendirilir, ertesi gün (UTC)
+kendiliğinden yenilenir. Tavanı `0` yapmak canlı analizi tamamen kapatır.
+
+**Hız sınırı ile tavanın farkı önemlidir:** yüz ayrı ziyaretçi hız sınırına
+hiç takılmadan kotayı bitirebilir. Tavan tam olarak bunu keser.
+
+### Bu korumanın sınırı
+
+Üç katman da **süreç belleğindedir.** Sunucusuz ortamda her örnek kendi
+sayacını ve kendi önbelleğini tutar; örnekler yenilendikçe ikisi de sıfırlanır.
+Yani günlük tavan kotayı garanti etmez — tüketim hızını bilinen bir kata
+indirir. Kesin garanti Faz 2'deki paylaşımlı sayaçla (Redis) gelir.
+
+Sıkılaştırmak isteyen `GZ_DAILY_CALL_CAP` ve `GZ_RATE_LIMIT` değerlerini
+düşürebilir; ikisi de ortam değişkenidir, kod değişikliği gerektirmez.
 
 ### Vercel Hobby adımları
 
@@ -120,7 +150,9 @@ lib/
   schema.ts             zod şemaları + TS tipleri
   modes.ts              mod sabitleri, mîzân hükmü (zod'suz — istemci paketi için)
   model.ts              API çağrısı, JSON ayıklama, tek tekrar
-  cache.ts              önbellekli örnekler
+  budget.ts             günlük model çağrısı tavanı
+  cache.ts              elle yazılmış tanıtım örnekleri
+  result-cache.ts       model sonuçlarının sunucu önbelleği
   sanitize.ts           model çıktısının temizlenmesi + safeRich
   rate-limit.ts         IP başına 20 istek/saat
   turkish.ts            toLocaleUpperCase("tr") sarmalayıcıları
@@ -183,7 +215,8 @@ model "Tez 3 — Karşı 7" yazıp `{tez: 1, karsi: 9}` verirse ekran kendisiyle
 ```
 
 Route sırasıyla: girdiyi doğrular (2–120 karakter, kontrol karakteri yok),
-hız sınırını uygular, modeli çağırır, cevabı zod ile doğrular, sanitize eder ve
+hız sınırını uygular, sunucu önbelleğine bakar (isabet varsa model çağrısı
+yapılmaz), günlük tavanı yoklar, modeli çağırır, cevabı zod ile doğrular, sanitize eder ve
 temizlenmiş nesneyi **bir kez daha** doğrular — temizlik bir alanı boşaltmışsa
 bu yakalanır. Şema tutmazsa bir kez sessizce tekrar dener; hız sınırı ve
 bağlantı hatalarında tekrar denemez — beklemek çözüm değildir.

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { AnalyzeError, runStep } from "@/lib/anthropic";
+import { AnalyzeError, runStep } from "@/lib/model";
 import { checkRateLimit, clientKey } from "@/lib/rate-limit";
 import { AnalyzeRequestSchema, type AnalyzeResponse, type ErrorCode } from "@/lib/schema";
 

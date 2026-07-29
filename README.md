@@ -16,18 +16,22 @@ dört adımıyla analiz edip **radyal ilim haritası** olarak gösteren web uygu
 
 ```bash
 npm install
-cp .env.example .env.local     # ANTHROPIC_API_KEY değerini doldurun
+cp .env.example .env.local     # GEMINI_API_KEY değerini doldurun
 npm run dev
 ```
 
-`ANTHROPIC_API_KEY` **yalnız sunucuda** okunur; `/api/analyze` route'u dışında
+Anahtar [Google AI Studio](https://aistudio.google.com/apikey)'dan alınır.
+`GEMINI_API_KEY` **yalnız sunucuda** okunur; `/api/analyze` route'u dışında
 hiçbir yere geçmez ve istemci paketine girmez. Anahtar tanımlı değilken de
 uygulama açılır — önbellekli örnekler model çağrısı yapmadan çalışır.
 
 | Değişken | Zorunlu | Varsayılan |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Canlı analiz için evet | — |
-| `GZ_MODEL` | Hayır | `claude-sonnet-5` |
+| `GEMINI_API_KEY` | Canlı analiz için evet | — |
+| `GZ_MODEL` | Hayır | `gemini-2.5-flash` |
+
+Sağlayıcıya bağlı tek dosya `lib/model.ts`'tir; promptlar, şema, içerik
+kuralları ve Mîzân yalıtımı sağlayıcıdan bağımsızdır.
 
 ---
 
@@ -57,7 +61,7 @@ otomatik türetilir.
 
 Canlı analizin çalıştığı tam sürüm bir sunucu ister (Vercel vb.). Basmadan önce:
 
-- `ANTHROPIC_API_KEY` platformun **ortam değişkeni** olarak tanımlanmalıdır;
+- `GEMINI_API_KEY` platformun **ortam değişkeni** olarak tanımlanmalıdır;
   `.env.local` deploy edilmez ve `.gitignore`'dadır.
 - **Hız sınırı süreç belleğindedir.** Sunucusuz ortamlarda her örnek kendi
   sayacını tutar ve örnekler yenilendikçe sayaç sıfırlanır; yani "IP başına
@@ -65,6 +69,20 @@ Canlı analizin çalıştığı tam sürüm bir sunucu ister (Vercel vb.). Basma
   çağrısıdır. Halka açık bir adreste bu, doğrudan bir maliyet açığıdır.
 - Faz 2'ye (paylaşımlı Redis sayacı) kadar erişimi kısıtlı tutmak — deploy
   koruması ve sağlayıcı tarafında harcama tavanı — önerilir.
+
+### Vercel Hobby adımları
+
+1. Vercel'de **Add New → Project** ile bu depo içe aktarılır. Framework
+   kendiliğinden Next.js olarak tanınır; derleme komutu `npm run build`'dir
+   (statik kip yalnız `GZ_STATIC=1` ile devreye girer, Vercel'de girmez).
+2. **Settings → Environment Variables** altına `GEMINI_API_KEY` eklenir.
+   Anahtar yalnız buraya girilir; depoya, `.env.example`'a veya herhangi bir
+   sohbete yazılmaz.
+3. Deploy sonrası `/api/analyze` çalışır ve canlı analiz açılır.
+
+Ücretsiz katmanın sınırı dakikadaki/gündeki istek sayısıdır. Her analiz **4
+model çağrısı** eder; sınır aşıldığında sağlayıcı 429 döner ve uygulama bunu
+`RATE` olarak gösterip kullanıcıyı hazır örneklere yönlendirir — çökmez.
 
 ---
 
@@ -101,7 +119,7 @@ lib/
   prompts.ts            dört modun prompt tanımları + çıktı sözleşmesi
   schema.ts             zod şemaları + TS tipleri
   modes.ts              mod sabitleri, mîzân hükmü (zod'suz — istemci paketi için)
-  anthropic.ts          API çağrısı, JSON ayıklama, tek tekrar
+  model.ts              API çağrısı, JSON ayıklama, tek tekrar
   cache.ts              önbellekli örnekler
   sanitize.ts           model çıktısının temizlenmesi + safeRich
   rate-limit.ts         IP başına 20 istek/saat

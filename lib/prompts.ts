@@ -130,7 +130,7 @@ başına veya sonuna hiçbir metin, açıklama, kod çiti ekleme.`;
    Model çıktı sözleşmesi (JSON Schema)
 
    Yapılandırılmış çıktı, ayrıştırma hatası sınıfını büyük ölçüde ortadan
-   kaldırır. lib/anthropic.ts yine de metin ayıklamayı ve §7'deki tekrarı
+   kaldırır. lib/model.ts yine de metin ayıklamayı ve §7'deki tekrarı
    geri düşüş olarak tutar.
    ──────────────────────────────────────────────────────────── */
 

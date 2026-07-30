@@ -19,11 +19,11 @@ const MizanZ = z.object({
 });
 
 export const BranchZ = z.object({
-  /** Dal adı — en fazla 4 kelime. */
+  /** Dal adı — en fazla 5 kelime. */
   name: z.string().min(1).max(80),
   /** Arapça terim. Model emin değilse boş bırakır. */
   ar: z.string().max(40).optional().default(""),
-  /** KELİME katmanı — tek anahtar kelime. */
+  /** KELİME katmanı — en fazla iki kelimelik anahtar terim. */
   word: z.string().min(1).max(40),
   /** CÜMLE katmanı — tek cümle, ≤15 kelime. */
   sentence: z.string().min(1).max(200),
@@ -75,9 +75,23 @@ export function boldCount(s: string): number {
 }
 
 const MAX_SENTENCE_WORDS = 15;
-const MAX_NAME_WORDS = 4;
 const PARA_SENTENCES = { min: 2, max: 3 };
 const MAX_BOLD = 2;
+
+/**
+ * `name` ve `word` sınırları 4 ve 1'den gevşetildi.
+ *
+ * Gerçek modelle ilk canlı denemede iki adım tam bu iki kuraldan düştü.
+ * Sebep Türkçe: "besin ögesi", "enerji dengesi", "hukukî statü" gibi terimler
+ * tek kelimeye sığmaz; tek kelimeye zorlanınca model ya terimi bozar ya kuralı
+ * çiğner. İki kelime KELİME katmanının "tek çıpa" fikrini korur, terimi bozmaz.
+ *
+ * Bu sayılar 02-VERİ-ŞEMASI ve 03-PROMPTLAR §1 ile birlikte değişmelidir;
+ * promptta yazan sınır ile burada denetlenen sınır ayrılırsa model kendisine
+ * söylenmemiş bir kuraldan düşer.
+ */
+const MAX_NAME_WORDS = 5;
+const MAX_WORD_WORDS = 2;
 
 /**
  * Moda göre içerik kuralları uygulayan şema.
@@ -103,11 +117,11 @@ export function modeResultSchema(mode: ModeKey) {
             message: `name en fazla ${MAX_NAME_WORDS} kelime olmalı (${wordCount(b.name)}).`,
           });
         }
-        if (wordCount(b.word) !== 1) {
+        if (wordCount(b.word) > MAX_WORD_WORDS) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: at("word"),
-            message: `word tek bir anahtar kelime olmalı (${wordCount(b.word)}).`,
+            message: `word en fazla ${MAX_WORD_WORDS} kelime olmalı (${wordCount(b.word)}).`,
           });
         }
       }

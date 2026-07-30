@@ -20,6 +20,18 @@ import { branchColor } from "@/lib/theme";
  */
 const IS_STATIC = process.env.NEXT_PUBLIC_GZ_STATIC === "1";
 
+/**
+ * İki adım arasındaki bekleme.
+ *
+ * Ücretsiz katmanların dakikalık istek sınırı vardır. Dört çağrı arka arkaya
+ * saniyeler içinde giderse bu sınır tepiyor ve analiz ortasında 429 alıyor.
+ * Küçük bir aralık analizi yavaşlatır ama tamamlanmasını sağlar — yarım kalmış
+ * bir harita, biraz geç gelen haritadan kötüdür.
+ */
+const STEP_GAP_MS = 2000;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 const IDLE_STATES: Record<ModeKey, StepState> = {
   nedir: "idle",
   nedegildir: "idle",
@@ -95,8 +107,17 @@ export default function Page() {
 
     // Ayrı ve sıralı çağrılar. Mîzân çağrısına yalnızca `topic` gider;
     // önceki adımların çıktısı hiçbir şekilde iletilmez.
-    for (const step of targets) {
+    for (const [i, step] of targets.entries()) {
       if (runId.current !== id) return;
+
+      // Aralık yalnız adımlar ARASINA girer; ilk adım beklemeden başlar ki
+      // kullanıcı boş ekrana bakmasın.
+      if (i > 0) {
+        await wait(STEP_GAP_MS);
+        // Bekleme sırasında yeni bir mevzu gönderilmiş olabilir.
+        if (runId.current !== id) return;
+      }
+
       setStates((s) => ({ ...s, [step]: "running" }));
 
       let payload: AnalyzeResponse;

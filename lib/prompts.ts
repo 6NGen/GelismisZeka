@@ -7,6 +7,13 @@ import type { ModeKey } from "./modes";
  * yapılmaz; promptların dili metodun disiplinini taşır. Metni değiştirmek
  * gerekiyorsa önce o dosya değişmelidir.
  *
+ * TEK SAPMA: §1'deki `name` sınırı 4→5, `word` sınırı "tek kelime"→"en fazla
+ * 2 kelime" olarak gevşetildi (sahibinin onayıyla). Gerçek modelle ilk canlı
+ * denemede iki adım tam bu iki kuraldan düştü; Türkçe'de "besin ögesi" gibi
+ * terimler tek kelimeye sığmıyor. Buradaki sayılar `lib/schema.ts` içindeki
+ * denetimle aynı olmalıdır — ayrılırsa model kendisine söylenmemiş bir
+ * kuraldan düşer. 03-PROMPTLAR.md de aynı şekilde güncellenmelidir.
+ *
  * MİMARİ KURALI: Mîzân çağrısına ilk üç çağrının çıktısı gönderilmez.
  * Bu dosyadaki hiçbir fonksiyon önceki adımların sonucunu parametre olarak
  * almaz; bağımsızlık niyetle değil imzayla korunur.
@@ -26,9 +33,9 @@ Emin olmadığın yerde emin gibi konuşmazsın.
 YALNIZCA geçerli JSON döndür. Markdown, açıklama, ön söz YOK.
 
 Alan kuralları:
-- name: kısa dal adı, en fazla 4 kelime
+- name: kısa dal adı, en fazla 5 kelime
 - ar: konuyla ilgili Arapça terim; bilmiyorsan boş string
-- word: tek bir anahtar kelime
+- word: anahtar terim, en fazla 2 kelime
 - sentence: tek cümlelik özet, en fazla 15 kelime
 - para: 2-3 cümlelik şerh; en fazla iki adet <b>...</b> vurgusu, başka HTML yok`;
 

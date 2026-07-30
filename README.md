@@ -90,6 +90,15 @@ kendiliğinden yenilenir. Tavanı `0` yapmak canlı analizi tamamen kapatır.
 **Hız sınırı ile tavanın farkı önemlidir:** yüz ayrı ziyaretçi hız sınırına
 hiç takılmadan kotayı bitirebilir. Tavan tam olarak bunu keser.
 
+### Dakikalık sınır: adımlar arasında bekleme
+
+Ücretsiz katmanların günlük sınırının yanında bir de **dakikalık** sınırı
+vardır. Dört çağrı saniyeler içinde arka arkaya giderse bu sınır tepiyor ve
+analiz ortasında 429 alıyor. `app/page.tsx` bu yüzden adımlar arasına 2 saniye
+koyar (`STEP_GAP_MS`): analiz ~13 saniye yerine ~19 saniye sürer, ama yarım
+kalmaz. Bekleme yalnız adımların ARASINA girer; ilk adım beklemeden başlar ve
+§7 tekrarı aynı adımın içinde olduğu için beklemez.
+
 ### Bu korumanın sınırı
 
 Üç katman da **süreç belleğindedir.** Sunucusuz ortamda her örnek kendi
@@ -173,9 +182,9 @@ Dört modun tamamı aynı dal biçimini kullanır; şerh üç katman hâlinde a�
 
 ```ts
 interface Branch {
-  name: string;      // dal adı — en fazla 4 kelime
+  name: string;      // dal adı — en fazla 5 kelime
   ar?: string;       // Arapça terim (emin değilse boş)
-  word: string;      // KELİME — tek anahtar kelime
+  word: string;      // KELİME — anahtar terim, en fazla 2 kelime
   sentence: string;  // CÜMLE — tek cümle, ≤15 kelime
   para: string;      // PARAGRAF — 2-3 cümle, sınırlı <b>/<i>
   mizan?: { tez: number; karsi: number };  // 0-10
@@ -184,6 +193,18 @@ interface Branch {
 
 İstenen dal sayısı 4 / 4 / 5 / 3'tür; model sapabildiği için arayüz 3–6 arası
 her sayıyı çizer.
+
+### Kelime sınırları neden 1 değil 2
+
+`word` başta "tek anahtar kelime", `name` "en fazla 4 kelime"ydi. Gerçek modelle
+ilk canlı denemede iki adım tam bu iki kuraldan düştü. Sebep Türkçe: "besin
+ögesi", "enerji dengesi", "hukukî statü" gibi terimler tek kelimeye sığmıyor;
+zorlanınca model ya terimi bozuyor ya kuralı çiğniyor. Sınır 2 ve 5 oldu —
+KELİME katmanının "tek çıpa" fikri korunur, terim bozulmaz.
+
+Bu sayılar **iki yerde birlikte** durur: `lib/prompts.ts` içindeki sistem
+promptunda (modele söylenen) ve `lib/schema.ts` içindeki denetimde (sunucuda
+sayılan). Ayrılırlarsa model kendisine hiç söylenmemiş bir kuraldan düşer.
 
 ### Mîzân hükmü modele sorulmaz
 

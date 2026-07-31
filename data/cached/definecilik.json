@@ -70,41 +70,47 @@
     "foot": "Beş düğüm, beş ayrı ilim — hepsi <b>aynı soruya</b> çıkıyor: bu işaret doğanın mı, insanın mı eseri?",
     "branches": [
       {
-        "name": "Jeoloji",
+        "name": "Aşınma ve Çözülme",
         "ar": "علم الأرض",
+        "ilim": "Jeoloji",
         "word": "Aşınma",
         "sentence": "Oyuğun aşınmayla mı elle mi açıldığını ancak yer bilgisi ayırır.",
         "para": "İşaretlerin büyük bölümü kaya yüzeyindedir ve kaya yüzeyi doğal olarak şekillenir; erozyon ve donma çözülme döngüsü insan eli izlenimi veren biçimler üretir. Bu süreçler bilinmezse her çukur kasıtlı, her çatlak yön gösterici sayılır. Hata rastlantısal da değildir: her zaman <b>aynı yöne</b>, gömü olduğu yönüne sapar."
       },
       {
-        "name": "Tarih",
+        "name": "Dönemlendirme",
         "ar": "التاريخ",
+        "ilim": "Tarih",
         "word": "Dönem",
         "sentence": "Kimin, ne zaman, neden gömdüğü bilinmeden yer iddiası kurulamaz.",
         "para": "Gömü boşlukta olan bir davranış değildir; belirli dönemlerde belirli sebeplerle yapılır. Bölgede kimlerin yaşadığı, hangi servetin taşınabilir olduğu ve hangi tehdidin saklama ihtiyacı doğurduğu tarihsel bilgidir. Bu bilgi olmadan kurulan senaryo her yere uyar, ve <b>her yere uyan iddia hiçbir yeri göstermez</b>."
       },
       {
-        "name": "Yazıt Bilgisi",
+        "name": "Alfabe ve Damga Ayrımı",
         "ar": "علم النقوش",
+        "ilim": "Yazıt Bilgisi",
         "word": "Alfabe",
         "sentence": "Bir işaretin hangi alfabeye ait olduğunu okumak ayrı bir uzmanlıktır.",
         "para": "Taş üzerindeki bir harf ya da damga, ait olduğu yazı geleneği içinde anlam kazanır; aynı biçim bir dönemde harf, başkasında sahiplik damgası olabilir. Bu ayrımlar öğrenilmeden yapılan okuma işareti çoğu zaman hiç var olmamış bir alfabeye bağlar. Ortaya çıkan şey yanlış bir çeviri değil, <b>kendi kendine üretilmiş bir metindir</b>."
       },
       {
-        "name": "Hukuk",
+        "name": "Kültür Varlıkları Mevzuatı",
         "ar": "القانون",
+        "ilim": "Hukuk",
         "word": "Zincir",
         "sentence": "İzinsiz kazı bir arayış değil, tanımı gereği suçtur.",
         "para": "Başvuru, sit taraması, denetimli kazı ve paylaşım bir zincirdir; bu zincirin <b>tek halkasını</b> atlamak faaliyeti suça dönüştürür. Kültür varlıkları mevzuatı toprak altındaki buluntuyu özel mülkiyet dışında tutar, yani aranan şey bulunsa dahi bulana ait olmaz. Hukuk bilinmediğinde hesap, gerçekte var olmayan bir ödül üzerine kurulmuş olur."
       },
       {
-        "name": "İhtimal Hesabı",
+        "name": "Taban Oran Yanılgısı",
         "ar": "علم الاحتمال",
+        "ilim": "İhtimal Hesabı",
         "word": "Yanlılık",
         "sentence": "Taban oran bilinmeden hiçbir işaret kanıt sayılamaz.",
         "para": "Bir işaretin gömüye işaret etme ihtimalini bilmek için, o işaretin gömü olmayan yerlerde ne sıklıkta bulunduğunu da bilmek gerekir; definecilikte yalnızca ilk taraf konuşulur. Üstelik anlatılan hikayeler doğal olarak bulunan vakalardan derlenir, bulunamayan binlerce kazı hiç anlatılmaz. Bu iki eksik bir araya geldiğinde <b>işe yaramayan bir yöntem işe yarıyor gibi görünür</b>."
       }
-    ]
+    ],
+    "mertebe": "konu"
   },
   "mizan": {
     "foot": "Yanlışlayan delil, destekleyen delille <b>aynı eşikten</b> geçer — üç tartıda da eşik aşılmıyor.",
@@ -115,7 +121,10 @@
         "word": "Tez 1 — Karşı 9",
         "sentence": "Karşı-düğüm ezici farkla ağır basıyor.",
         "para": "<b>Tez:</b> anlatılar ve nadir tesadüfler. <b>Karşı:</b> işaretsiz yerlerin kazı sonucu hiç kaydedilmemiştir, dolayısıyla karşılaştırma yapılamaz; aynı biçimler ayrıca jeolojik olarak kendiliğinden oluşur. Elde kalan tek dayanak <i>sonradan seçilmiş başarı hikayeleridir</i>.",
-        "mizan": { "tez": 1, "karsi": 9 }
+        "mizan": {
+          "tez": 1,
+          "karsi": 9
+        }
       },
       {
         "name": "\"Geçmişte servet toprağa gömülürdü\"",
@@ -123,7 +132,10 @@
         "word": "Tez 7 — Karşı 3",
         "sentence": "Tez ağır basıyor ama tek başına hiçbir kazıyı gerekçelendirmiyor.",
         "para": "<b>Tez:</b> savaş ve göç dönemlerine ait belgelenmiş sikke defineleri vardır. <b>Karşı:</b> doğru olan genel önerme, herhangi bir belirli noktaya dair sonuç vermez. Ayakta kalan şey <i>davranışın varlığıdır</i>, aranan yerin doğruluğu değil.",
-        "mizan": { "tez": 7, "karsi": 3 }
+        "mizan": {
+          "tez": 7,
+          "karsi": 3
+        }
       },
       {
         "name": "\"Yeterince kazan sonunda bulur\"",
@@ -131,7 +143,10 @@
         "word": "Tez 1 — Karşı 8",
         "sentence": "Karşı-düğüm ağır basıyor; ısrar bilgi biriktirmiyor.",
         "para": "<b>Tez:</b> arama alanı taranırsa kapsam artar. <b>Karşı:</b> her kazı bir öncekinden bağımsızdır ve alan pratikte sınırsızdır, dolayısıyla kapsam hiçbir zaman anlamlı orana ulaşmaz. Bu iddianın asıl işlevi bulmayı sağlamak değil, <i>vazgeçmeyi geciktirmektir</i>.",
-        "mizan": { "tez": 1, "karsi": 8 }
+        "mizan": {
+          "tez": 1,
+          "karsi": 8
+        }
       }
     ]
   }

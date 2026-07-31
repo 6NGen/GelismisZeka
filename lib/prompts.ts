@@ -92,13 +92,24 @@ JSON şeması:
 
 const BAGLI = `Mevzu: "{TOPIC}"
 
-GZ'nin üçüncü sorusu: BU NEYE BAĞLIDIR? Zinciri kur — bu mevzu hangi ilimlere bağlıdır?
-Birbirinden farklı 5 ilim/disiplin dalı üret
-(ör. hukuk, fıkıh, tarih, fizik, ekonomi, biyoloji, psikoloji — mevzuya uygun olanlar).
+GZ'nin üçüncü sorusu: BU NEYE BAĞLIDIR? Zinciri kur.
+
+Önce mevzuun MERTEBESİNİ belirle ve mertebe alanına yaz:
+- "ilim": mevzu başlı başına bir ilim/disiplindir (ör. matematik, fıkıh, dilbilim).
+- "konu": mevzu bir ilmin içindeki bir bölüm, konu ya da meseledir
+  (ör. türev, icmâ, present perfect).
+
+Mertebe "ilim" ise: bu ilme bağlı olan 5 BAŞKA İLİM dalı üret.
+name alanı o ilmin adı olsun; ilim alanını boş bırak.
+
+Mertebe "konu" ise: bu konunun bağlantılı olduğu, DİĞER İLİMLERDEKİ 5 KONU üret.
+ilim alanı o konunun bulunduğu ilmin adı, name alanı o ilimdeki konunun adı olsun.
+Her dal farklı bir ilimden olsun; mevzuun kendi ilmini tekrar etme.
+
 Her dalda o ilmin KENDİ deliliyle ne söylediğini yaz.
 
 JSON şeması:
-{"foot":"<b> içerebilen tek cümlelik alt not — dalların ortak vardığı sonuç varsa onu belirt","branches":[{"name":"","ar":"","word":"","sentence":"","para":""}]}`;
+{"mertebe":"ilim veya konu","foot":"<b> içerebilen tek cümlelik alt not — dalların ortak vardığı sonuç varsa onu belirt","branches":[{"name":"","ar":"","ilim":"","word":"","sentence":"","para":""}]}`;
 
 const MIZAN = `Mevzu: "{TOPIC}"
 
@@ -151,42 +162,64 @@ const BRANCH_PROPS = {
 
 const BRANCH_REQUIRED = ["name", "ar", "word", "sentence", "para"] as const;
 
-function modeResultSchema(withMizan: boolean) {
+const MIZAN_PROP = {
+  type: "object",
+  properties: {
+    tez: { type: "number" },
+    karsi: { type: "number" },
+  },
+  required: ["tez", "karsi"],
+  additionalProperties: false,
+} as const;
+
+/**
+ * Bağ adımı iki alan daha ister: merkezin mertebesi ve — konu mertebesinde —
+ * dalın ait olduğu ilim. `ilim` şemada zorunludur ama ilim mertebesinde boş
+ * string geçilir; dolu olup olmaması kuralı zod tarafında denetlenir.
+ */
+function modeResultSchema(kind: "plain" | "bagli" | "mizan") {
+  const props =
+    kind === "mizan"
+      ? { ...BRANCH_PROPS, mizan: MIZAN_PROP }
+      : kind === "bagli"
+        ? { ...BRANCH_PROPS, ilim: { type: "string" } }
+        : BRANCH_PROPS;
+
+  const required =
+    kind === "mizan"
+      ? [...BRANCH_REQUIRED, "mizan"]
+      : kind === "bagli"
+        ? [...BRANCH_REQUIRED, "ilim"]
+        : [...BRANCH_REQUIRED];
+
   return {
     type: "object",
     properties: {
       foot: { type: "string" },
+      ...(kind === "bagli"
+        ? { mertebe: { type: "string", enum: ["ilim", "konu"] } }
+        : {}),
       branches: {
         type: "array",
         items: {
           type: "object",
-          properties: withMizan
-            ? {
-                ...BRANCH_PROPS,
-                mizan: {
-                  type: "object",
-                  properties: {
-                    tez: { type: "number" },
-                    karsi: { type: "number" },
-                  },
-                  required: ["tez", "karsi"],
-                  additionalProperties: false,
-                },
-              }
-            : BRANCH_PROPS,
-          required: withMizan ? [...BRANCH_REQUIRED, "mizan"] : [...BRANCH_REQUIRED],
+          properties: props,
+          required,
           additionalProperties: false,
         },
       },
     },
-    required: ["foot", "branches"],
+    required: kind === "bagli" ? ["mertebe", "foot", "branches"] : ["foot", "branches"],
     additionalProperties: false,
   };
 }
 
-const BRANCH_OUTPUT_SCHEMA = modeResultSchema(false);
-const MIZAN_OUTPUT_SCHEMA = modeResultSchema(true);
+const BRANCH_OUTPUT_SCHEMA = modeResultSchema("plain");
+const BAGLI_OUTPUT_SCHEMA = modeResultSchema("bagli");
+const MIZAN_OUTPUT_SCHEMA = modeResultSchema("mizan");
 
 export function outputSchemaForMode(mode: ModeKey) {
-  return mode === "mizan" ? MIZAN_OUTPUT_SCHEMA : BRANCH_OUTPUT_SCHEMA;
+  if (mode === "mizan") return MIZAN_OUTPUT_SCHEMA;
+  if (mode === "bagli") return BAGLI_OUTPUT_SCHEMA;
+  return BRANCH_OUTPUT_SCHEMA;
 }

@@ -23,6 +23,15 @@ export const BranchZ = z.object({
   name: z.string().min(1).max(80),
   /** Arapça terim. Model emin değilse boş bırakır. */
   ar: z.string().max(40).optional().default(""),
+  /**
+   * Dalın ait olduğu ilim — yalnız konu düzeyi bağda dolar.
+   *
+   * Merkezde bir ilim varken dalın kendisi bir ilimdir ve `name` onu taşır;
+   * bu alan boş kalır. Merkezde bir konu varken dal "başka bir ilimdeki
+   * karşılık gelen konu"dur, o yüzden iki parça gerekir: hangi ilim (`ilim`)
+   * ve o ilimde hangi konu (`name`).
+   */
+  ilim: z.string().max(60).optional().default(""),
   /** KELİME katmanı — en fazla iki kelimelik anahtar terim. */
   word: z.string().min(1).max(40),
   /** CÜMLE katmanı — tek cümle, ≤15 kelime. */
@@ -33,12 +42,21 @@ export const BranchZ = z.object({
   mizan: MizanZ.optional(),
 });
 
+/**
+ * Merkezin mertebesi. Bağın çözünürlüğünü bu belirler:
+ * ilim ortadaysa bağ ilimlere, konu ortadaysa diğer ilimlerdeki konulara kurulur.
+ * Yalnız "bagli" adımında anlamlıdır.
+ */
+export const MertebeZ = z.enum(["ilim", "konu"]);
+
 export const ModeResultZ = z.object({
   foot: z.string().max(300),
+  mertebe: MertebeZ.optional(),
   /** İstenen sayı 4/4/5/3'tür; model sapabilir, arayüz 3–6 arasını çizer. */
   branches: z.array(BranchZ).min(3).max(6),
 });
 
+export type Mertebe = z.infer<typeof MertebeZ>;
 export type Mizan = z.infer<typeof MizanZ>;
 export type Branch = z.infer<typeof BranchZ>;
 export type ModeResult = z.infer<typeof ModeResultZ>;
@@ -104,9 +122,31 @@ const MAX_WORD_WORDS = 2;
  */
 export function modeResultSchema(mode: ModeKey) {
   const isMizan = mode === "mizan";
+  const isBagli = mode === "bagli";
 
   return ModeResultZ.superRefine((result, ctx) => {
+    // Bağ adımında mertebe zorunludur: bağın ilimlere mi konulara mı
+    // kurulacağını o belirler, dolayısıyla eksikse dal sayısı doğru olsa bile
+    // sonuç yorumlanamaz.
+    if (isBagli && !result.mertebe) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["mertebe"],
+        message: "Bağ adımında mertebe (ilim | konu) belirtilmeli.",
+      });
+    }
+
     result.branches.forEach((b, i) => {
+      // Konu düzeyi bağda dal "başka bir ilimdeki konu"dur; hangi ilim olduğu
+      // söylenmezse bağ yarım kalır — kullanıcı konuyu bir yere oturtamaz.
+      if (isBagli && result.mertebe === "konu" && !b.ilim.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["branches", i, "ilim"],
+          message: "Konu mertebesinde her dal hangi ilme ait olduğunu belirtmeli.",
+        });
+      }
+
       const at = (field: string) => ["branches", i, field];
 
       if (!isMizan) {

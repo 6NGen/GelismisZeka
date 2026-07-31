@@ -184,6 +184,7 @@ Dört modun tamamı aynı dal biçimini kullanır; şerh üç katman hâlinde a�
 interface Branch {
   name: string;      // dal adı — en fazla 5 kelime
   ar?: string;       // Arapça terim (emin değilse boş)
+  ilim?: string;     // dalın ait olduğu ilim — yalnız konu düzeyi bağda dolar
   word: string;      // KELİME — anahtar terim, en fazla 2 kelime
   sentence: string;  // CÜMLE — tek cümle, ≤15 kelime
   para: string;      // PARAGRAF — 2-3 cümle, sınırlı <b>/<i>
@@ -205,6 +206,30 @@ KELİME katmanının "tek çıpa" fikri korunur, terim bozulmaz.
 Bu sayılar **iki yerde birlikte** durur: `lib/prompts.ts` içindeki sistem
 promptunda (modele söylenen) ve `lib/schema.ts` içindeki denetimde (sunucuda
 sayılan). Ayrılırlarsa model kendisine hiç söylenmemiş bir kuraldan düşer.
+
+### Bağın çözünürlüğü merkezin mertebesine bağlıdır
+
+Üçüncü soru (`bagli`) tek biçimli değildir. Merkezdeki mevzuun **mertebesi**
+bağın hangi düzeyde kurulacağını belirler:
+
+| Merkezde | Bağ neye kurulur | `ilim` alanı |
+|---|---|---|
+| Bir **ilim** (matematik, fıkıh, dilbilim) | O ilme bağlı **diğer ilimler** | boş — dalın kendisi ilimdir |
+| Bir **konu/bölüm** (türev, icmâ, present perfect) | Diğer ilimlerdeki **karşılık gelen konular** | dolu — dal "hangi ilimde hangi konu" |
+
+Mertebeyi model belirler ve `mertebe` alanına yazar; ayrı bir çağrı yapılmaz.
+Sunucu, ilim mertebesinde `ilim` alanını temizler — orada dolu olması bilgiyi
+iki kez göstermekten başka bir şey yapmaz.
+
+**Neden önemli:** "Matematik" merkezdeyken çıkan harita (fizik, mantık,
+ekonomi…) kimseye matematik öğretmez. "Türev" merkezdeyken çıkan harita
+(*Fizikte hız ve ivme*, *Ekonomide marjinal maliyet*, *Biyolojide büyüme
+oranı*) aynı kavramı beş ayrı ağa bağlar. Metodun kalıcılık ilkesi —
+ne kadar çok ilimle bağ kurulursa bilgi o kadar kalıcı olur — tam burada
+işler. Metot yukarıda tanıtır, aşağıda öğretir.
+
+Konu düzeyi bağ döngü de kurar: "Türev"den "marjinal maliyet"e inip oradan
+bakınca karşınıza yine matematik çıkar. Zincir bir ağaç değil, bir ağdır.
 
 ### Mîzân hükmü modele sorulmaz
 

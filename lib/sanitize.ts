@@ -50,12 +50,20 @@ export function sanitizeRichSource(s: string): string {
 
 /** Model çıktısının tamamını alan bazında temizler. */
 export function sanitizeModeResult(result: ModeResult): ModeResult {
+  // İlim mertebesinde dalın kendisi bir ilimdir ve adı `name`de durur; `ilim`
+  // alanı orada anlamsızdır. Model yine de doldurursa aynı bilgi iki yerde
+  // görünür ve arayüzde "Matematik / Matematik" gibi bir tekrar çıkar.
+  // Reddetmek yerine temizleniyor: bu bir içerik hatası değil, fazlalık.
+  const dropIlim = result.mertebe === "ilim";
+
   return {
     foot: sanitizeRichSource(result.foot),
+    ...(result.mertebe ? { mertebe: result.mertebe } : {}),
     branches: result.branches.map(
       (b): Branch => ({
         name: sanitizePlain(b.name),
         ar: sanitizePlain(b.ar ?? ""),
+        ilim: dropIlim ? "" : sanitizePlain(b.ilim ?? ""),
         word: sanitizePlain(b.word),
         sentence: sanitizePlain(b.sentence),
         para: sanitizeRichSource(b.para),

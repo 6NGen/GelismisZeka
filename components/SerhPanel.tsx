@@ -86,7 +86,12 @@ export default function SerhPanel({ branch, color, open, onClose }: Props) {
         <>
           <header className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-[18px] font-semibold leading-tight" style={{ color }}>
+              {branch.ilim ? (
+                <p className="lbl text-[9px]" style={{ color }} lang="tr">
+                  {branch.ilim}
+                </p>
+              ) : null}
+              <h2 className="mt-1 text-[18px] font-semibold leading-tight" style={{ color }}>
                 {branch.name}
               </h2>
               {branch.ar ? <p className="ar mt-1 text-[15px] text-muted">{branch.ar}</p> : null}

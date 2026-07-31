@@ -104,6 +104,20 @@ export default function RadialMap({ topic, mode, branches, selected, onSelect }:
                 }
                 className="branch-node text-center"
               >
+                {/*
+                  Konu düzeyi bağda dalın hangi ilme ait olduğu adın ÜSTÜNDE
+                  durur: önce hangi ilme geçtiğini görsün, sonra o ilimdeki
+                  konuyu okusun. Bağın kendisi bilginin parçasıdır.
+                */}
+                {branch.ilim ? (
+                  <span
+                    className="lbl block text-[8px] leading-tight"
+                    style={{ color: "var(--branch-color)" }}
+                    lang="tr"
+                  >
+                    {branch.ilim}
+                  </span>
+                ) : null}
                 <span className="branch-name block text-[11.5px] font-semibold leading-tight text-ink">
                   {branch.name}
                 </span>

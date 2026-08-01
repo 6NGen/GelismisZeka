@@ -1,4 +1,4 @@
-import type { Branch, ModeResult } from "./schema";
+import type { Branch, Gorsel, ModeResult } from "./schema";
 import { hasControlChars } from "./modes";
 
 /**
@@ -48,6 +48,54 @@ export function sanitizeRichSource(s: string): string {
     .trim();
 }
 
+/**
+ * Görsel tarifinin metin alanları temizlenir; sayılar olduğu gibi geçer.
+ * Sayılar zaten şemada sınırlıdır ve hiçbiri işaretleme taşımaz.
+ *
+ * Tür ayrımı `tur` alanı üzerinden yapılır; şema ayrık birlik olduğu için
+ * buraya gelen nesnenin biçimi garantidir.
+ */
+function sanitizeGorsel(g: Gorsel): Gorsel {
+  switch (g.tur) {
+    case "zaman-cizgisi":
+      return {
+        ...g,
+        baslik: sanitizePlain(g.baslik),
+        seritler: g.seritler.map((s) => ({
+          ad: sanitizePlain(s.ad),
+          noktalar: s.noktalar.map((n) => ({ ...n, etiket: sanitizePlain(n.etiket) })),
+        })),
+      };
+    case "sinir":
+      return {
+        ...g,
+        baslik: sanitizePlain(g.baslik),
+        sol: { ad: sanitizePlain(g.sol.ad), ogeler: g.sol.ogeler.map(sanitizePlain) },
+        sag: { ad: sanitizePlain(g.sag.ad), ogeler: g.sag.ogeler.map(sanitizePlain) },
+        ortak: g.ortak.map(sanitizePlain),
+      };
+    case "grafik":
+      return {
+        ...g,
+        baslik: sanitizePlain(g.baslik),
+        xEtiket: sanitizePlain(g.xEtiket),
+        yEtiket: sanitizePlain(g.yEtiket),
+        egriler: g.egriler.map((e) => ({ ...e, ad: sanitizePlain(e.ad) })),
+      };
+    case "surec":
+      return {
+        ...g,
+        baslik: sanitizePlain(g.baslik),
+        adimlar: g.adimlar.map((a) => ({
+          ad: sanitizePlain(a.ad),
+          aciklama: sanitizePlain(a.aciklama),
+        })),
+      };
+    case "simulasyon":
+      return { ...g, baslik: sanitizePlain(g.baslik) };
+  }
+}
+
 /** Model çıktısının tamamını alan bazında temizler. */
 export function sanitizeModeResult(result: ModeResult): ModeResult {
   // İlim mertebesinde dalın kendisi bir ilimdir ve adı `name`de durur; `ilim`
@@ -59,6 +107,7 @@ export function sanitizeModeResult(result: ModeResult): ModeResult {
   return {
     foot: sanitizeRichSource(result.foot),
     ...(result.mertebe ? { mertebe: result.mertebe } : {}),
+    ...(result.gorsel ? { gorsel: sanitizeGorsel(result.gorsel) } : {}),
     branches: result.branches.map(
       (b): Branch => ({
         name: sanitizePlain(b.name),

@@ -37,7 +37,23 @@ Alan kuralları:
 - ar: konuyla ilgili Arapça terim; bilmiyorsan boş string
 - word: anahtar terim, en fazla 2 kelime
 - sentence: tek cümlelik özet, en fazla 15 kelime
-- para: 2-3 cümlelik şerh; en fazla iki adet <b>...</b> vurgusu, başka HTML yok`;
+- para: 2-3 cümlelik şerh; en fazla iki adet <b>...</b> vurgusu, başka HTML yok
+
+GÖRSEL ANLATIM — gorsel alanı, yalnız GEREKTİĞİNDE
+Mevzu çizimle daha iyi anlaşılıyorsa harita başına BİR görsel tarifi ver.
+Anlatıma bir şey katmıyorsa gorsel alanını hiç yazma; süs olsun diye ekleme.
+Türler:
+- "zaman-cizgisi": sıra, dönem ya da zaman kipi anlatılıyorsa. İki şerit
+  verirsen iki şey karşılaştırılmış olur. konum 0-100 arası bir orandır.
+- "sinir": iki şeyin ayrımı anlatılıyorsa. sol/sag ayıran nitelikler,
+  ortak ise ikisinde de bulunanlardır.
+- "grafik": nicel bir ilişki, eğri ya da değişim anlatılıyorsa.
+  Formül YAZMA; eğriyi kendin örnekleyip x-y noktaları olarak ver.
+- "surec": sıralı adımlardan oluşan bir işleyiş anlatılıyorsa.
+- "simulasyon": fiziksel hareket anlatılıyorsa. Yalnız hangi olayı ve
+  başlangıç değerlerini söyle; hareketi uygulama hesaplar, sen HESAPLAMA.
+  atis → hiz (m/s) ve aci (derece); serbest-dusus → yukseklik (m);
+  sarkac → uzunluk (m).`;
 
 /* ────────────────────────────────────────────────────────────
    5. Mîzân — bağımsız yanlışlayıcının KENDİ sistem promptu
@@ -177,6 +193,132 @@ const MIZAN_PROP = {
  * dalın ait olduğu ilim. `ilim` şemada zorunludur ama ilim mertebesinde boş
  * string geçilir; dolu olup olmaması kuralı zod tarafında denetlenir.
  */
+/**
+ * Görsel tarifi — ayrık birlik. `anyOf` Gemini'nin yapılandırılmış çıktısında
+ * desteklenir; `tur` alanı hangi kolun geçerli olduğunu belirler.
+ *
+ * Model burada çizim değil TARİF üretir. Simülasyonda ise yalnız hangi olay ve
+ * hangi başlangıç değerleri — hareketi kod hesaplar.
+ */
+const GORSEL_SCHEMA = {
+  anyOf: [
+    {
+      type: "object",
+      properties: {
+        tur: { type: "string", enum: ["zaman-cizgisi"] },
+        baslik: { type: "string" },
+        seritler: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              ad: { type: "string" },
+              noktalar: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: { etiket: { type: "string" }, konum: { type: "number" } },
+                  required: ["etiket", "konum"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["ad", "noktalar"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tur", "baslik", "seritler"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        tur: { type: "string", enum: ["sinir"] },
+        baslik: { type: "string" },
+        sol: {
+          type: "object",
+          properties: { ad: { type: "string" }, ogeler: { type: "array", items: { type: "string" } } },
+          required: ["ad", "ogeler"],
+          additionalProperties: false,
+        },
+        sag: {
+          type: "object",
+          properties: { ad: { type: "string" }, ogeler: { type: "array", items: { type: "string" } } },
+          required: ["ad", "ogeler"],
+          additionalProperties: false,
+        },
+        ortak: { type: "array", items: { type: "string" } },
+      },
+      required: ["tur", "baslik", "sol", "sag", "ortak"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        tur: { type: "string", enum: ["grafik"] },
+        baslik: { type: "string" },
+        xEtiket: { type: "string" },
+        yEtiket: { type: "string" },
+        egriler: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              ad: { type: "string" },
+              noktalar: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: { x: { type: "number" }, y: { type: "number" } },
+                  required: ["x", "y"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["ad", "noktalar"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tur", "baslik", "xEtiket", "yEtiket", "egriler"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        tur: { type: "string", enum: ["surec"] },
+        baslik: { type: "string" },
+        adimlar: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: { ad: { type: "string" }, aciklama: { type: "string" } },
+            required: ["ad", "aciklama"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["tur", "baslik", "adimlar"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        tur: { type: "string", enum: ["simulasyon"] },
+        baslik: { type: "string" },
+        model: { type: "string", enum: ["atis", "serbest-dusus", "sarkac"] },
+        hiz: { type: "number" },
+        aci: { type: "number" },
+        yukseklik: { type: "number" },
+        uzunluk: { type: "number" },
+      },
+      required: ["tur", "baslik", "model"],
+      additionalProperties: false,
+    },
+  ],
+} as const;
+
 function modeResultSchema(kind: "plain" | "bagli" | "mizan") {
   const props =
     kind === "mizan"
@@ -196,6 +338,9 @@ function modeResultSchema(kind: "plain" | "bagli" | "mizan") {
     type: "object",
     properties: {
       foot: { type: "string" },
+      // İsteğe bağlı: `required` listesinde yok, yani model gerekmediğinde
+      // hiç üretmez ve harita metinle kalır.
+      gorsel: GORSEL_SCHEMA,
       ...(kind === "bagli"
         ? { mertebe: { type: "string", enum: ["ilim", "konu"] } }
         : {}),

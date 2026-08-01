@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import AltBilgi from "@/components/AltBilgi";
 import AskBar from "@/components/AskBar";
+import GorselAnlatim from "@/components/gorsel";
 import ModePicker from "@/components/ModePicker";
 import ProgressSteps, { type StepState } from "@/components/ProgressSteps";
 import RadialMap from "@/components/RadialMap";
@@ -235,6 +236,17 @@ export default function Page() {
                     className="mx-auto max-w-2xl text-center text-[13.5px] leading-relaxed text-muted [&_b]:font-semibold [&_b]:text-ink"
                     dangerouslySetInnerHTML={{ __html: safeRich(result.foot) }}
                   />
+
+                  {/*
+                    Görsel haritanın ALTINDA durur, yerine geçmez: harita
+                    metodun kendi biçimidir, görsel onu destekler.
+                    Model gerek görmediyse hiç gelmez.
+                  */}
+                  {result.gorsel ? (
+                    <div className="mx-auto w-full max-w-2xl">
+                      <GorselAnlatim gorsel={result.gorsel} />
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-center text-[13px] text-muted">

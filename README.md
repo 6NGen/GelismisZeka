@@ -152,6 +152,7 @@ components/
   ProgressSteps.tsx     4 adım göstergesi
   ModePicker.tsx        NEDİR / NE DEĞİLDİR / NEYE BAĞLIDIR / MÎZÂN
   RadialMap.tsx         merkez + dallar + SVG bağlar
+  gorsel/               görsel anlatım bileşenleri (çizimi model değil kod yapar)
   SerhPanel.tsx         kelime → cümle → paragraf
   MizanBar.tsx          tez/karşı ağırlık çubuğu
 lib/
@@ -230,6 +231,37 @@ işler. Metot yukarıda tanıtır, aşağıda öğretir.
 
 Konu düzeyi bağ döngü de kurar: "Türev"den "marjinal maliyet"e inip oradan
 bakınca karşınıza yine matematik çıkar. Zincir bir ağaç değil, bir ağdır.
+
+### Görsel anlatım — model çizmez, tarif eder
+
+Harita başına en çok bir görsel gelir ve **yalnız gerektiğinde**; model gerek
+görmezse harita metinle kalır.
+
+| Tür | Nerede işe yarar |
+|---|---|
+| `zaman-cizgisi` | Sıra, dönem, zaman kipi. İki şerit karşılaştırma yapar |
+| `sinir` | "Bu ne değildir" sorusunun doğal biçimi — ayrımın kendisi |
+| `grafik` | Nicel ilişki, eğri, değişim |
+| `surec` | Sıralı işleyiş (hukuk zinciri, biyolojik döngü) |
+| `simulasyon` | Fiziksel hareket — eğik atış, serbest düşüş, sarkaç |
+
+**Model çizim üretmez, çizim TARİFİ üretir.** Sabit bir türler sözlüğünden
+birini seçip alanlarını doldurur; çizimin kendisi `components/gorsel/`
+altındaki elle yazılmış bileşenlerdedir. Bu, `MizanBar`'ın genelleştirilmiş
+hâlidir: model sayı ve etiket verir, nasıl gösterileceğine uygulama karar verir.
+
+Model SVG ya da kod üretseydi iki şey birden kaybedilirdi: `<script>` taşıyan
+SVG iki katmanlı HTML güvenliğini delerdi, üretilen çizimin kalitesi de
+denetlenemezdi.
+
+**Simülasyonda fizik modele bırakılmaz.** Model yalnız hangi olayın ve hangi
+başlangıç değerlerinin gösterileceğini söyler; yörüngeyi, süreyi, menzili
+`Simulasyon.tsx` kapalı formülle hesaplar. Gerekçe: bir şema, bir cümleden çok
+daha fazla otorite taşır — öğrenci resme metinden çok inanır. Modelin
+hesapladığı bir yörünge sessizce yanlış olabilir, kapalı formülünki olamaz.
+
+Kullanıcı değerleri kaydırıcıyla değiştirebilir; simülasyonun öğrettiği şey tek
+bir atış değil, açı ve hız değişince ne olduğudur.
 
 ### Mîzân hükmü modele sorulmaz
 

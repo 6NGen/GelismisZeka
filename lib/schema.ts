@@ -49,9 +49,115 @@ export const BranchZ = z.object({
  */
 export const MertebeZ = z.enum(["ilim", "konu"]);
 
+/* ────────────────────────────────────────────────────────────
+   Görsel anlatım — harita başına en çok bir tane
+
+   Model çizim YAPMAZ, çizim TARİFİ verir: sabit bir türler sözlüğünden
+   birini seçip alanlarını doldurur. Çizimin kendisi elle yazılmış
+   bileşenlerdedir. Gerekçe MizanBar ile aynı: modelin verdiği şey sayı ve
+   etiket, nasıl gösterileceği uygulamanın hükmü.
+
+   Simülasyonda fizik de modele bırakılmaz. Model yalnız hangi olayın ve
+   hangi başlangıç değerlerinin gösterileceğini söyler; yörüngeyi kod hesaplar.
+   Modelin hesapladığı bir yörünge yanlış olabilir, kodun hesapladığı olamaz.
+   ──────────────────────────────────────────────────────────── */
+
+const Etiket = z.string().min(1).max(60);
+const KisaMetin = z.string().min(1).max(160);
+
+/** Zaman çizgisi — dil, tarih. İki şerit karşılaştırmayı mümkün kılar. */
+const ZamanCizgisiZ = z.object({
+  tur: z.literal("zaman-cizgisi"),
+  baslik: Etiket,
+  seritler: z
+    .array(
+      z.object({
+        ad: Etiket,
+        noktalar: z
+          .array(z.object({ etiket: Etiket, konum: z.number().min(0).max(100) }))
+          .min(1)
+          .max(8),
+      }),
+    )
+    .min(1)
+    .max(2),
+});
+
+/** Sınır çizimi — "bu ne değildir" sorusunun doğal biçimi. */
+const SinirZ = z.object({
+  tur: z.literal("sinir"),
+  baslik: Etiket,
+  sol: z.object({ ad: Etiket, ogeler: z.array(Etiket).min(1).max(6) }),
+  sag: z.object({ ad: Etiket, ogeler: z.array(Etiket).min(1).max(6) }),
+  ortak: z.array(Etiket).max(4).optional().default([]),
+});
+
+/**
+ * Eğri/grafik — matematik, fizik, ekonomi.
+ * Model formül değil ÖRNEKLENMİŞ NOKTA verir; formül değerlendirmesi yok,
+ * dolayısıyla kod çalıştırma yüzeyi de yok.
+ */
+const GrafikZ = z.object({
+  tur: z.literal("grafik"),
+  baslik: Etiket,
+  xEtiket: Etiket,
+  yEtiket: Etiket,
+  egriler: z
+    .array(
+      z.object({
+        ad: Etiket,
+        noktalar: z
+          .array(z.object({ x: z.number().finite(), y: z.number().finite() }))
+          .min(2)
+          .max(40),
+      }),
+    )
+    .min(1)
+    .max(3),
+});
+
+/** Süreç zinciri — hukuk, fıkıh, biyoloji. */
+const SurecZ = z.object({
+  tur: z.literal("surec"),
+  baslik: Etiket,
+  adimlar: z.array(z.object({ ad: Etiket, aciklama: KisaMetin })).min(2).max(6),
+});
+
+/**
+ * Simülasyon — hareketi kod üretir.
+ * `model` hangi olayın gösterileceğini seçer; parametreler başlangıç
+ * değerleridir. Desteklenmeyen bir model adı şemadan geçemez.
+ */
+const SimulasyonZ = z.object({
+  tur: z.literal("simulasyon"),
+  baslik: Etiket,
+  model: z.enum(["atis", "serbest-dusus", "sarkac"]),
+  hiz: z.number().min(0).max(200).optional(),
+  aci: z.number().min(0).max(90).optional(),
+  yukseklik: z.number().min(0).max(500).optional(),
+  uzunluk: z.number().min(0.1).max(20).optional(),
+});
+
+export const GorselZ = z.discriminatedUnion("tur", [
+  ZamanCizgisiZ,
+  SinirZ,
+  GrafikZ,
+  SurecZ,
+  SimulasyonZ,
+]);
+
+export type Gorsel = z.infer<typeof GorselZ>;
+export type ZamanCizgisi = z.infer<typeof ZamanCizgisiZ>;
+export type Sinir = z.infer<typeof SinirZ>;
+export type Grafik = z.infer<typeof GrafikZ>;
+export type Surec = z.infer<typeof SurecZ>;
+export type Simulasyon = z.infer<typeof SimulasyonZ>;
+
 export const ModeResultZ = z.object({
   foot: z.string().max(300),
   mertebe: MertebeZ.optional(),
+  /** Görsel anlatım — yalnız gerektiğinde. Yoksa harita metinle kalır. */
+  gorsel: GorselZ.optional(),
   /** İstenen sayı 4/4/5/3'tür; model sapabilir, arayüz 3–6 arasını çizer. */
   branches: z.array(BranchZ).min(3).max(6),
 });

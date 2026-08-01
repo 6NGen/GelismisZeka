@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { AnalyzeError, runStep } from "@/lib/model";
+import { kutuphaneAdimi } from "@/lib/kutuphane-server";
 import { checkRateLimit, clientKey } from "@/lib/rate-limit";
 import { getResult, putResult } from "@/lib/result-cache";
 import { AnalyzeRequestSchema, type AnalyzeResponse, type ErrorCode } from "@/lib/schema";
@@ -35,8 +36,15 @@ export async function POST(request: Request): Promise<NextResponse<AnalyzeRespon
 
   const { topic, step } = parsed.data;
 
-  // Aynı mevzu daha önce çözüldüyse modele hiç gidilmez. Hız sınırından SONRA
-  // bakılır: önbellek ucuz diye uç noktanın sınırsız dövülmesi serbest olmaz.
+  // Üç kademeli arama, ucuzdan pahalıya: kütüphane (kalıcı, gözden geçirilmiş)
+  // → çalışma-zamanı önbelleği (süreç ömrü kadar) → model.
+  // Hız sınırından SONRA bakılır: ucuz olmaları uç noktanın sınırsız
+  // dövülmesini serbest bırakmaz.
+  const kutuphaneden = kutuphaneAdimi(step, topic);
+  if (kutuphaneden) {
+    return NextResponse.json<AnalyzeResponse>({ ok: true, data: kutuphaneden });
+  }
+
   const cached = getResult(step, topic);
   if (cached) {
     return NextResponse.json<AnalyzeResponse>({ ok: true, data: cached });

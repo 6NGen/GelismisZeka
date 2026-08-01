@@ -67,19 +67,24 @@ Canlı analizin çalıştığı tam sürüm bir sunucu ister (Vercel vb.). Basma
 - `GEMINI_API_KEY` platformun **ortam değişkeni** olarak tanımlanmalıdır;
   `.env.local` deploy edilmez ve `.gitignore`'dadır.
 
-### Kota koruması — üç katman
+### Kota koruması — dört katman
 
 Bir analiz **4 model çağrısı** eder. Halka açık bir adreste ücretsiz katmanın
-bir günde tükenmemesi için üç ayrı katman vardır; üçü farklı şeyi korur:
+bir günde tükenmemesi için dört ayrı katman vardır; her biri farklı şeyi korur:
 
-| Katman | Dosya | Neyi durdurur |
-|---|---|---|
-| Sonuç önbelleği | `lib/result-cache.ts` | Aynı mevzunun tekrar tekrar sorulmasını |
-| Günlük çağrı tavanı | `lib/budget.ts` | **Toplam** tüketimi |
-| IP başına hız sınırı | `lib/rate-limit.ts` | Tek bir ziyaretçinin aşırıya kaçmasını |
+| Katman | Dosya | Neyi durdurur | Ömrü |
+|---|---|---|---|
+| **Kütüphane** | `lib/kutuphane.ts` | Hazır mevzuların hiç üretilmesini | Kalıcı |
+| Sonuç önbelleği | `lib/result-cache.ts` | Aynı mevzunun tekrar sorulmasını | Süreç ömrü |
+| Günlük çağrı tavanı | `lib/budget.ts` | **Toplam** tüketimi | Gün |
+| IP başına hız sınırı | `lib/rate-limit.ts` | Tek ziyaretçinin aşırıya kaçmasını | Saat |
 
-**Sonuç önbelleği** en çok kazandıran katmandır: gerçek trafikte aynı birkaç
-mevzu tekrar tekrar sorulur ve ikinci sorudan itibaren model çağrısı sıfırdır.
+Arama ucuzdan pahalıya yapılır: kütüphane → çalışma-zamanı önbelleği → model.
+İstemci de sunucu da kütüphaneye bakar; ikincisi, kota güvencesinin istemcinin
+davranışına bağlı kalmaması içindir.
+
+**Sonuç önbelleği** süreç belleğindedir: aynı mevzu ikinci kez sorulduğunda
+model çağrısı sıfırdır, ama sunucu örneği yenilendiğinde tablo boşalır.
 Anahtar `adım | küçük harfli mevzu`, ömrü varsayılan 24 saat.
 
 **Günlük tavan** her model çağrısında artan bir sayaçtır — §7 tekrarı da
@@ -101,10 +106,14 @@ kalmaz. Bekleme yalnız adımların ARASINA girer; ilk adım beklemeden başlar 
 
 ### Bu korumanın sınırı
 
-Üç katman da **süreç belleğindedir.** Sunucusuz ortamda her örnek kendi
-sayacını ve kendi önbelleğini tutar; örnekler yenilendikçe ikisi de sıfırlanır.
-Yani günlük tavan kotayı garanti etmez — tüketim hızını bilinen bir kata
-indirir. Kesin garanti Faz 2'deki paylaşımlı sayaçla (Redis) gelir.
+Kütüphane dışındaki **üç katman süreç belleğindedir.** Sunucusuz ortamda her
+örnek kendi sayacını ve kendi önbelleğini tutar; örnekler yenilendikçe ikisi de
+sıfırlanır. Yani günlük tavan kotayı garanti etmez — tüketim hızını bilinen bir
+kata indirir. Kesin garanti Faz 2'deki paylaşımlı sayaçla (Redis) gelir.
+
+Kütüphane bu sınırın dışındadır: depoda durur, soğuk başlatmadan etkilenmez ve
+büyüdükçe kalıcı olarak kota tüketimini düşürür. Kotaya bağımlılığı gerçekten
+azaltan tek katman odur.
 
 Sıkılaştırmak isteyen `GZ_DAILY_CALL_CAP` ve `GZ_RATE_LIMIT` değerlerini
 düşürebilir; ikisi de ortam değişkenidir, kod değişikliği gerektirmez.
@@ -122,6 +131,63 @@ düşürebilir; ikisi de ortam değişkenidir, kod değişikliği gerektirmez.
 Ücretsiz katmanın sınırı dakikadaki/gündeki istek sayısıdır. Her analiz **4
 model çağrısı** eder; sınır aşıldığında sağlayıcı 429 döner ve uygulama bunu
 `RATE` olarak gösterip kullanıcıyı hazır örneklere yönlendirir — çökmez.
+
+---
+
+## Kütüphane
+
+Kütüphane, önceden üretilmiş ve **elle gözden geçirilmiş** analizlerdir.
+İki işi birden yapar ve ikincisi birincisinden önemlidir:
+
+**1. Kota.** Kütüphanedeki bir mevzu hiç model çağrısı yapmaz — ne Vercel'de
+ne de statik GitHub Pages'te. Trafiğin büyük kısmı aynı birkaç mevzuya gider;
+onlar burada durursa kota yalnız **yeni** mevzular için harcanır. Kütüphane
+büyüdükçe uygulamanın kotaya bağımlılığı azalır.
+
+**2. Doğruluk.** Kütüphane içeriği kullanıcının önünde canlı üretilmez:
+üretilir, dosya olarak yazılır, **insan okur**, sonra depoya girer. İlimler
+arası bağların ve Arapça terimlerin sessizce yanlış olma riski ancak bu ara
+adımla kesilebilir. Canlı üretimde böyle bir denetim imkânsızdır.
+
+### Üretme
+
+```bash
+# data/mevzular.json içine mevzuları yazın, sonra:
+GEMINI_API_KEY=... npm run kutuphane
+
+# tek bir mevzuu baştan üretmek için:
+GEMINI_API_KEY=... npm run kutuphane -- --yenile "Faiz"
+```
+
+Betik uygulamanın **kendi kod yolunu** kullanır: aynı promptlar, aynı şema,
+aynı içerik kuralları, aynı temizlik, aynı tek-tekrar. Ayrı bir üretim yolu
+olsaydı kütüphanedeki içerik canlı üretilenden sessizce farklılaşırdı.
+
+Var olan mevzu yeniden üretilmez; yarıda kesilen üretim tekrar çalıştırıldığında
+kaldığı yerden sürer ve kota yanmaz. Kota sınırına gelinirse üretim durur,
+o ana kadar üretilenler korunur.
+
+`GZ_KUTUPHANE_ARALIK` (varsayılan 3000 ms) çağrılar arasındaki beklemedir;
+sağlayıcının dakikalık sınırına yaklaşmamak için.
+
+### Yükleme biçimi
+
+| Ne | Nerede | Nasıl |
+|---|---|---|
+| Dizin (mevzu adı → dosya) | `data/kutuphane-index.json` | Paketlenir — birkaç bayt |
+| Analizlerin gövdesi | `public/kutuphane/*.json` | İstendiğinde indirilir |
+
+Bu ayrım şart: bir analiz ~10 KB. Hepsi paketlenseydi 200 mevzuluk bir
+kütüphane istemci paketine 2 MB eklerdi. Şimdi kütüphane büyüdükçe paket
+büyümüyor.
+
+Statik dışa aktarımda site alt dizinde sunulduğu için (`/GelismisZeka`) ham
+`fetch` önek ister; `NEXT_PUBLIC_GZ_BASE_PATH` bunu istemciye bildirir.
+Sunucu tarafında gövdeler dosyadan okunur ve yol çalışma zamanında kurulduğu
+için `outputFileTracingIncludes` ile sunucusuz pakete açıkça dâhil edilir.
+
+**Kütüphane büyüdükçe statik sürüm gerçek bir ürüne dönüşür:** GitHub Pages'te
+API anahtarı da uç nokta da yokken kütüphanedeki her mevzu tam olarak açılır.
 
 ---
 
@@ -161,13 +227,21 @@ lib/
   modes.ts              mod sabitleri, mîzân hükmü (zod'suz — istemci paketi için)
   model.ts              API çağrısı, JSON ayıklama, tek tekrar
   budget.ts             günlük model çağrısı tavanı
-  cache.ts              elle yazılmış tanıtım örnekleri
+  cache.ts              kütüphane arayüzü (sözleşme korunuyor)
+  kutuphane.ts          kütüphane dizini + gövde indirme (istemci)
+  kutuphane-server.ts   kütüphanenin sunucu tarafı karşılığı
   result-cache.ts       model sonuçlarının sunucu önbelleği
   sanitize.ts           model çıktısının temizlenmesi + safeRich
   rate-limit.ts         IP başına 20 istek/saat
   turkish.ts            toLocaleUpperCase("tr") sarmalayıcıları
-data/cached/
+data/
+  kutuphane-index.json  mevzu adı → dosya adı (paketlenir)
+  mevzular.json         üretilecek mevzu listesi
+public/kutuphane/
   definecilik.json      elle yazılmış tam örnek
+scripts/
+  kutuphane.mts         kütüphane üreticisi
+  build-static.mjs      GitHub Pages çıktısı
 ```
 
 `lib/schema.ts` ile `lib/modes.ts` ayrımı bilinçlidir: bileşenlerin ihtiyaç

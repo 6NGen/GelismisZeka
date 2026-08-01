@@ -18,6 +18,14 @@ const basePath = process.env.GZ_BASE_PATH ?? "/GelismisZeka";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /**
+   * Kütüphane gövdeleri `public/` altında durur ve API route onları dosya
+   * yolundan okur. Yol çalışma zamanında kurulduğu için izleyici bu dosyaları
+   * kendiliğinden bulamaz; sunucusuz pakete açıkça dâhil edilmeleri gerekir.
+   */
+  outputFileTracingIncludes: {
+    "/api/analyze": ["./public/kutuphane/**"],
+  },
   ...(isStatic
     ? {
         output: "export" as const,

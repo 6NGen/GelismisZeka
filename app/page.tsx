@@ -84,11 +84,15 @@ export default function Page() {
       setMode("nedir");
       setStates(IDLE_STATES);
 
-      const cached = getCached(topic);
+      // Kütüphanede varsa modele hiç gidilmez. Gövde paketlenmediği için
+      // indirme beklenir; bu yüzden arada yeni bir gönderim olup olmadığı
+      // yeniden yoklanır.
+      const cached = await getCached(topic);
+      if (runId.current !== id) return;
       if (cached) {
         setAnalysis(cached);
         setStates({ nedir: "done", nedegildir: "done", bagli: "done", mizan: "done" });
-        setNotice("Bu mevzu önbellekte hazırdı — model çağrısı yapılmadı.");
+        setNotice("Bu mevzu kütüphanede hazırdı — model çağrısı yapılmadı.");
         setBusy(false);
         return;
       }

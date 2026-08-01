@@ -1,31 +1,28 @@
-import definecilik from "@/data/cached/definecilik.json";
-
+import { kutuphaneMevzulari, kutuphanedeVar, kutuphanedenGetir } from "./kutuphane";
 import type { Analysis } from "./schema";
-import { topicKey } from "./turkish";
 
 /**
- * Faz 1 önbelleği: elle yazılmış statik analizler.
+ * Önbellek arayüzü — gövdesi artık `lib/kutuphane.ts`.
  *
- * Amaç maliyet değil güvence — ilk gösterimde uygulamanın çalıştığını
- * kanıtlayan en az bir tam örnek API'ye hiç gitmeden açılmalıdır.
- * Faz 2'de bu tablo Supabase'e taşınır; arayüz sözleşmesi aynı kalır.
+ * Faz 1'de burada elle yazılmış tek bir örnek dururdu ve amacı maliyet değil
+ * güvenceydi. Kütüphaneyle birlikte amaç ikiye çıktı: aynı mevzu tekrar
+ * sorulduğunda model çağrısı yapılmaması (kota) ve yayına giren içeriğin
+ * önceden okunmuş olması (doğruluk).
+ *
+ * Sözleşme korunuyor; değişen tek şey `getCached`'in artık eşzamansız olması —
+ * analizlerin gövdesi paketlenmiyor, istendiğinde indiriliyor.
  */
 
-const CACHED: Analysis[] = [definecilik as Analysis];
-
-const INDEX = new Map(CACHED.map((a) => [topicKey(a.topic), a]));
-
-export function getCached(topic: string): Analysis | null {
-  return INDEX.get(topicKey(topic)) ?? null;
+export async function getCached(topic: string): Promise<Analysis | null> {
+  return kutuphanedenGetir(topic);
 }
 
 export function isCached(topic: string): boolean {
-  return INDEX.has(topicKey(topic));
+  return kutuphanedeVar(topic);
 }
 
-/** Giriş çubuğunda gösterilen hazır mevzular. */
-export const EXAMPLES: string[] = [
-  "Definecilik",
-  "Faiz",
-  "Beslenme uzmanlığı",
-];
+/**
+ * Giriş çubuğundaki hazır mevzular. Kütüphaneden türetilir; elle tutulan bir
+ * liste, kütüphaneyle ayrı düşüp var olmayan mevzuyu önerebilirdi.
+ */
+export const EXAMPLES: string[] = kutuphaneMevzulari().slice(0, 6);

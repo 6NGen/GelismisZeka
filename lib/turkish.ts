@@ -21,3 +21,22 @@ export function trLower(s: string): string {
 export function topicKey(topic: string): string {
   return trLower(topic).trim().replace(/\s+/g, " ");
 }
+
+/**
+ * Dosya adı için Türkçe harfleri düzleştirir: "Beslenme Uzmanlığı" →
+ * "beslenme-uzmanligi".
+ *
+ * Küçültme yine `trLower` ile yapılır; önce İngilizce `toLowerCase` çağırıp
+ * sonra harf değiştirmek "İ"yi bozar. Eşleme buradan geçtikten SONRA uygulanır.
+ */
+const HARF: Record<string, string> = {
+  ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u", â: "a", î: "i", û: "u",
+};
+
+export function slugify(topic: string): string {
+  return trLower(topic)
+    .trim()
+    .replace(/[çğıöşüâîû]/g, (h) => HARF[h] ?? h)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

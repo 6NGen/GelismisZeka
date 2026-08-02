@@ -56,7 +56,10 @@ export async function POST(request: Request): Promise<NextResponse<AnalyzeRespon
     return NextResponse.json<AnalyzeResponse>({ ok: true, data });
   } catch (err) {
     if (err instanceof AnalyzeError) {
-      return fail(err.code, err.message, err.code === "RATE" ? 429 : 502);
+      // Dakikalık kotada sağlayıcının bildirdiği süre istemciye geçirilir;
+      // günlük kotada böyle bir süre yoktur ve uydurulmaz.
+      const headers = err.retryAfterSec ? { "retry-after": String(err.retryAfterSec) } : undefined;
+      return fail(err.code, err.message, err.code === "RATE" ? 429 : 502, headers);
     }
     // Beklenmeyen hatanın ayrıntısı istemciye sızmaz; sunucu günlüğünde kalır.
     console.error("[analyze] beklenmeyen hata:", err);

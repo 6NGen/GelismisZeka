@@ -24,7 +24,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { MODES, type ModeKey } from "../lib/modes";
-import { runStep } from "../lib/model";
+import { AnalyzeError, runStep } from "../lib/model";
 import type { Analysis, ModeResult } from "../lib/schema";
 import { slugify } from "../lib/turkish";
 
@@ -51,6 +51,30 @@ function dizinYaz(girdiler: Girdi[]): void {
   writeFileSync(DIZIN_DOSYASI, JSON.stringify(sirali, null, 2) + "\n");
 }
 
+/**
+ * Bir adımı çalıştırır; DAKİKALIK kotaya takılırsa bekleyip tekrar dener.
+ *
+ * Toplu üretimde beklemek doğru davranıştır: dakikalık sınır saniyeler içinde
+ * açılır ve iş zaten arka planda çalışıyordur. Canlı akışta aynı şeyi yapmak
+ * kullanıcıyı ekran başında bekletirdi — bu yüzden orada değil, burada.
+ *
+ * Günlük kotada beklenmez: `retryAfterSec` tanımsız gelir, hata yukarı çıkar
+ * ve üretim durur.
+ */
+async function adimCalistir(mod: ModeKey, topic: string, kalanDeneme = 3): Promise<ModeResult> {
+  try {
+    return await runStep(mod, topic);
+  } catch (err) {
+    if (err instanceof AnalyzeError && err.retryAfterSec && kalanDeneme > 1) {
+      const saniye = err.retryAfterSec + 2;
+      process.stdout.write(`dakikalık kota — ${saniye}s bekleniyor… `);
+      await bekle(saniye * 1000);
+      return adimCalistir(mod, topic, kalanDeneme - 1);
+    }
+    throw err;
+  }
+}
+
 async function mevzuUret(topic: string): Promise<Analysis> {
   const sonuclar: Partial<Record<ModeKey, ModeResult>> = {};
 
@@ -59,7 +83,7 @@ async function mevzuUret(topic: string): Promise<Analysis> {
     process.stdout.write(`    ${mod}… `);
     // runStep şemayı, içerik kurallarını, temizliği ve §7 tekrarını uygular.
     // Hatalıysa fırlatır; o mevzu yarım yazılmaz.
-    sonuclar[mod] = await runStep(mod, topic);
+    sonuclar[mod] = await adimCalistir(mod, topic);
     process.stdout.write("tamam\n");
   }
 
@@ -110,7 +134,8 @@ async function main() {
       const sebep = err instanceof Error ? err.message : String(err);
       console.log(`    DÜŞTÜ — ${sebep}`);
       dusenler.push({ topic, sebep });
-      // Kota bittiyse kalanları denemek yalnız aynı hatayı çoğaltır.
+      // Günlük kota bittiyse kalanları denemek yalnız aynı hatayı çoğaltır.
+      // (Dakikalık kota yukarıda beklenerek geçildi; buraya ulaşmaz.)
       if (/kota|Çok fazla istek/i.test(sebep)) {
         console.log("\nKota sınırına gelindi; üretim burada durduruldu.");
         break;

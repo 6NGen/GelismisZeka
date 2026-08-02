@@ -170,6 +170,11 @@ o ana kadar üretilenler korunur.
 `GZ_KUTUPHANE_ARALIK` (varsayılan 3000 ms) çağrılar arasındaki beklemedir;
 sağlayıcının dakikalık sınırına yaklaşmamak için.
 
+**Dakikalık kotaya takılırsa bekler, günlükte durur.** Toplu üretimde beklemek
+doğru davranıştır: dakikalık sınır saniyeler içinde açılır ve iş zaten arka
+planda çalışır. Canlı akışta aynı şeyi yapmak kullanıcıyı ekran başında
+bekletirdi — bu yüzden bekleme orada değil, yalnız burada.
+
 ### Yükleme biçimi
 
 | Ne | Nerede | Nasıl |
@@ -393,6 +398,12 @@ sınanmıştır: betik çalışmaz, olay işleyicisi kalmaz, `<b>`/`<i>` korunur
 ---
 
 ## Hata davranışı
+
+Sağlayıcının 429'u tek bir durum değildir ve ikisi ayrı ayrı bildirilir:
+**dakikalık** kota saniyeler içinde açılır (mesajda kaç saniye bekleneceği
+yazar, `retry-after` başlığı da gönderilir), **günlük** kota ertesi güne kadar
+kapalıdır ve beklemek çözmez. İkisine aynı cümleyi söylemek kullanıcıyı ya
+boşuna bekletir ya boşuna vazgeçirir; ayrım `quotaId` alanından yapılır.
 
 | Durum | Davranış |
 |---|---|

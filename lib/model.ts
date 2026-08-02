@@ -48,10 +48,50 @@ export class AnalyzeError extends Error {
   constructor(
     readonly code: ErrorCode,
     message: string,
+    /**
+     * Yalnız dakikalık kota ihlalinde dolar. Günlük kotada tanımsızdır —
+     * beklemenin çözmeyeceği bir durumda "biraz sonra dene" demek yanlıştır.
+     */
+    readonly retryAfterSec?: number,
   ) {
     super(message);
     this.name = "AnalyzeError";
   }
+}
+
+/**
+ * Sağlayıcının 429'unu ayrıştırır.
+ *
+ * "Kota doldu" tek bir durum değil: dakikalık sınır saniyeler içinde açılır,
+ * günlük sınır ertesi güne kadar kapalıdır. İkisine aynı cümleyi söylemek
+ * kullanıcıyı boşuna bekletir ya da boşuna vazgeçirir. Gemini ihlalin türünü
+ * hata gövdesindeki `quotaId` içinde bildirir (…PerDay… / …PerMinute…),
+ * beklenecek süreyi de `retryDelay` alanında.
+ *
+ * Biçim tanınmazsa eski genel mesaja düşülür; tanıma başarısızlığı analizi
+ * durdurmamalı.
+ */
+function kotaHatasi(ham: string): AnalyzeError {
+  const gecikme = Number(/"?retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/.exec(ham)?.[1]);
+  const saniye = Number.isFinite(gecikme) ? Math.ceil(gecikme) : undefined;
+
+  if (/PerDay/i.test(ham)) {
+    return new AnalyzeError(
+      "RATE",
+      "Sağlayıcının GÜNLÜK model kotası doldu — bugünlük yeni analiz yapılamıyor, " +
+        "hak yarın yenilenir. Kütüphanedeki mevzular çalışmaya devam eder.",
+    );
+  }
+
+  if (/PerMinute/i.test(ham)) {
+    return new AnalyzeError(
+      "RATE",
+      `Sağlayıcının DAKİKALIK model kotası doldu — ${saniye ?? "birkaç"} saniye sonra tekrar deneyin.`,
+      saniye ?? 30,
+    );
+  }
+
+  return new AnalyzeError("RATE", "Model kota sınırına takıldı — biraz sonra tekrar deneyin.");
 }
 
 /**
@@ -131,7 +171,7 @@ async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<
     if (err instanceof AnalyzeError) throw err;
     if (err instanceof ApiError) {
       if (err.status === 429) {
-        throw new AnalyzeError("RATE", "Model kota sınırına takıldı — biraz sonra tekrar deneyin.");
+        throw kotaHatasi(err.message);
       }
       throw new AnalyzeError("UPSTREAM", `Model çağrısı başarısız (${err.status}).`);
     }

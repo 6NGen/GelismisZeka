@@ -1,0 +1,146 @@
+name: Kütüphane üret
+
+# Kütüphaneyi burada üretmenin sebebi anahtardır: GEMINI_API_KEY depo sırrı
+# olarak durur, kimsenin makinesine inmez ve hiçbir sohbete yapıştırılmaz.
+#
+# İş akışı üretimi YAYINLAMAZ; bir dal açıp pull request oluşturur. Kütüphanenin
+# değeri zaten o ara adımdadır: üretilen içerik insan tarafından OKUNMADAN
+# depoya girmemeli. PR'ın diff'i tam olarak o okuma ekranıdır.
+#
+# Elle başlatılır (Actions → Kütüphane üret → Run workflow). Kendiliğinden
+# çalışmaz: kota harcayan bir işin kazara tetiklenmesi istenmez.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mevzular:
+        description: "Yalnız bunlar (virgülle ayrılmış). Boş bırakılırsa data/mevzular.json içindeki eksikler üretilir."
+        required: false
+        default: ""
+      yenile:
+        description: "Var olanları da baştan üret"
+        type: boolean
+        required: false
+        default: false
+      aralik:
+        description: "Çağrılar arası bekleme (ms)"
+        required: false
+        default: "4000"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# İki üretim aynı anda çalışırsa ikisi de aynı kotayı yer ve dizin çakışır.
+concurrency:
+  group: kutuphane
+  cancel-in-progress: false
+
+jobs:
+  uret:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Anahtar tanımlı mı
+        env:
+          ANAHTAR: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$ANAHTAR" ]; then
+            echo "::error::GEMINI_API_KEY depo sırrı tanımlı değil. Settings -> Secrets and variables -> Actions -> New repository secret"
+            exit 1
+          fi
+          echo "Anahtar tanımlı."
+
+      # Girdiler kabuğa doğrudan gömülmez; ortam değişkeniyle geçer.
+      # Doğrudan gömülseydi mevzu metni kabuk komutu olarak yorumlanabilirdi.
+      - name: İstenen mevzuları listeye ekle
+        if: inputs.mevzular != ''
+        env:
+          MEVZULAR: ${{ inputs.mevzular }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const yol = "data/mevzular.json";
+            const mevcut = JSON.parse(fs.readFileSync(yol, "utf8"));
+            const gelen = (process.env.MEVZULAR || "").split(",").map((s) => s.trim()).filter(Boolean);
+            const yeni = gelen.filter((m) => !mevcut.includes(m));
+            fs.writeFileSync(yol, JSON.stringify([...mevcut, ...yeni], null, 2) + "\n");
+            console.log("listeye eklenen:", yeni.join(", ") || "(yok, hepsi zaten vardı)");
+          '
+
+      - name: Üret
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GZ_KUTUPHANE_ARALIK: ${{ inputs.aralik }}
+          MEVZULAR: ${{ inputs.mevzular }}
+          YENILE: ${{ inputs.yenile }}
+          # Günlük tavan uygulamanın canlı akışını korumak içindir; toplu
+          # üretimi kendi kendine kesmemeli. Sağlayıcının gerçek kotası zaten
+          # üstte duruyor ve dolduğunda betik kendiliğinden duruyor.
+          GZ_DAILY_CALL_CAP: "100000"
+        run: |
+          if [ "$YENILE" = "true" ] && [ -n "$MEVZULAR" ]; then
+            IFS=',' read -ra LISTE <<< "$MEVZULAR"
+            KIRPILMIS=()
+            for m in "${LISTE[@]}"; do
+              KIRPILMIS+=("$(echo "$m" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')")
+            done
+            npm run kutuphane -- --yenile "${KIRPILMIS[@]}"
+          else
+            npm run kutuphane
+          fi
+
+      - name: Değişiklik var mı
+        id: fark
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "var=hayir" >> "$GITHUB_OUTPUT"
+            echo "Üretilecek yeni mevzu yoktu; kütüphane zaten güncel."
+          else
+            echo "var=evet" >> "$GITHUB_OUTPUT"
+            git status --short
+          fi
+
+      # runStep üretim sırasında zaten doğruluyor; dosyaya yazıldıktan sonra bir
+      # daha bakmak ucuz ve bozuk bir dosyanın incelemeyi boşa harcamasını önler.
+      - name: Üretilenleri doğrula
+        if: steps.fark.outputs.var == 'evet'
+        run: NODE_OPTIONS=--conditions=react-server npx tsx scripts/kutuphane-dogrula.mts
+
+      - name: Derlenebiliyor mu
+        if: steps.fark.outputs.var == 'evet'
+        run: |
+          npx tsc --noEmit
+          npm run build
+
+      - name: Dal aç ve pull request oluştur
+        if: steps.fark.outputs.var == 'evet'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DAL="kutuphane/uretim-$(date -u +%Y%m%d-%H%M)"
+          SAYI=$(ls public/kutuphane/*.json | wc -l)
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$DAL"
+          git add data/ public/kutuphane/
+          git commit \
+            -m "Kütüphane üretimi — $(date -u +%Y-%m-%d)" \
+            -m "Kütüphanedeki toplam mevzu: $SAYI" \
+            -m "Bu içerik okunmadan birleştirilmemelidir."
+          git push -u origin "$DAL"
+          gh pr create \
+            --title "Kütüphane üretimi — $(date -u +%Y-%m-%d) ($SAYI mevzu)" \
+            --body-file .github/kutuphane-pr.md \
+            --base main \
+            --head "$DAL"

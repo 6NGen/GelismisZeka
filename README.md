@@ -149,7 +149,22 @@ büyüdükçe uygulamanın kotaya bağımlılığı azalır.
 arası bağların ve Arapça terimlerin sessizce yanlış olma riski ancak bu ara
 adımla kesilebilir. Canlı üretimde böyle bir denetim imkânsızdır.
 
-### Üretme
+### Üretme — GitHub üzerinden (önerilen)
+
+Anahtarın kimsenin makinesine inmemesi için üretim depoda çalışır.
+
+1. **Settings → Secrets and variables → Actions → New repository secret**
+   adıyla `GEMINI_API_KEY` eklenir. Anahtar yalnız buraya girilir.
+2. **Actions → Kütüphane üret → Run workflow.**
+3. İş akışı üretir, şemadan geçirir, derler ve **pull request açar.**
+
+İş akışı üretimi doğrudan yayınlamaz. Kütüphanenin değeri o ara adımdadır:
+PR'ın diff'i, içeriğin okunduğu ekrandır. Okumadan birleştirmeyin.
+
+Beğenilmeyen bir mevzu için iş akışını o mevzu adıyla ve **"Var olanları da
+baştan üret"** seçeneğiyle çalıştırın; ya da JSON'u elle düzeltin.
+
+### Üretme — yerelde
 
 ```bash
 # data/mevzular.json içine mevzuları yazın, sonra:
@@ -157,6 +172,9 @@ GEMINI_API_KEY=... npm run kutuphane
 
 # tek bir mevzuu baştan üretmek için:
 GEMINI_API_KEY=... npm run kutuphane -- --yenile "Faiz"
+
+# elle düzeltilmiş dosyaları şemadan geçirmek için:
+NODE_OPTIONS=--conditions=react-server npx tsx scripts/kutuphane-dogrula.mts
 ```
 
 Betik uygulamanın **kendi kod yolunu** kullanır: aynı promptlar, aynı şema,
@@ -246,6 +264,7 @@ public/kutuphane/
   definecilik.json      elle yazılmış tam örnek
 scripts/
   kutuphane.mts         kütüphane üreticisi
+  kutuphane-dogrula.mts kütüphanedeki dosyaları şemadan geçirir
   build-static.mjs      GitHub Pages çıktısı
 ```
 

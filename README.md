@@ -125,6 +125,25 @@ azaltan tek katman odur.
 Sıkılaştırmak isteyen `GZ_DAILY_CALL_CAP` ve `GZ_RATE_LIMIT` değerlerini
 düşürebilir; ikisi de ortam değişkenidir, kod değişikliği gerektirmez.
 
+### 6ngen.com/gz altında sunum
+
+Uygulama kendi alanında değil, 6ngen.com'un altında `/gz` yolunda sunulur.
+Site (`6NGen/6ngen-site`) istekleri buraya vekiller; kod taşınmaz, iki uygulama
+ayrı dağıtılmaya devam eder.
+
+İki ayar birbirine bağlıdır:
+
+| Proje | Değişken | Değer |
+|---|---|---|
+| GZ (bu depo) | `GZ_BASE_PATH` | `/gz` |
+| 6ngen-site | `GZ_ORIGIN` | bu uygulamanın dağıtım adresi |
+
+`GZ_BASE_PATH` hem derlemede hem `next start` sırasında tanımlı olmalıdır —
+yapılandırma çalışma zamanında da okunur. İstemci tarafındaki önek buradan
+türetilir (`next.config.ts` → `env`), ayrıca tanımlanmaz: iki ayrı değişken
+elle tutulsaydı biri güncellenip diğeri unutulduğunda uygulama açılır ama API
+ve kütüphane istekleri sessizce 404 dönerdi.
+
 ### Vercel Hobby adımları
 
 1. Vercel'de **Add New → Project** ile bu depo içe aktarılır. Framework

@@ -35,18 +35,11 @@ try {
     console.log("· app/api derleme süresince dışarı alındı");
   }
 
-  // Kütüphane gövdeleri ham `fetch` ile indirilir ve Next `basePath`i ham
-  // isteklere eklemez; önek istemciye ayrıca bildirilir (bkz. lib/kutuphane.ts).
-  const basePath = process.env.GZ_BASE_PATH ?? "/GelismisZeka";
-
+  // İstemci tarafındaki önek `next.config.ts` içinde GZ_BASE_PATH'ten
+  // türetilir; burada ayrıca geçirilmez ki iki değer birbirinden ayrılamasın.
   execSync("npx next build", {
     stdio: "inherit",
-    env: {
-      ...process.env,
-      GZ_STATIC: "1",
-      NEXT_PUBLIC_GZ_STATIC: "1",
-      NEXT_PUBLIC_GZ_BASE_PATH: basePath,
-    },
+    env: { ...process.env, GZ_STATIC: "1", NEXT_PUBLIC_GZ_STATIC: "1" },
   });
 
   // Jekyll _next dizinini yok sayar; bu dosya olmadan sayfa stilsiz açılır.

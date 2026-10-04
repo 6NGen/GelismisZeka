@@ -1,5 +1,6 @@
 import index from "@/data/kutuphane-index.json";
 
+import { appPath } from "./base-path";
 import type { Analysis } from "./schema";
 import { topicKey } from "./turkish";
 
@@ -29,12 +30,6 @@ const GIRDILER = index as Girdi[];
 
 const ARAMA = new Map(GIRDILER.map((g) => [topicKey(g.topic), g]));
 
-/**
- * Statik dışa aktarımda site alt dizinde sunulur (`/GelismisZeka`). `fetch`
- * bunu kendiliğinden eklemez — `next/link` ve `next/image` ekler, ham istek
- * eklemez — bu yüzden önek burada elle konur.
- */
-const BASE = process.env.NEXT_PUBLIC_GZ_BASE_PATH ?? "";
 
 export function kutuphanedeVar(topic: string): boolean {
   return ARAMA.has(topicKey(topic));
@@ -55,7 +50,7 @@ export async function kutuphanedenGetir(topic: string): Promise<Analysis | null>
   if (!girdi) return null;
 
   try {
-    const res = await fetch(`${BASE}/kutuphane/${girdi.slug}.json`, { cache: "force-cache" });
+    const res = await fetch(appPath(`/kutuphane/${girdi.slug}.json`), { cache: "force-cache" });
     if (!res.ok) return null;
     return (await res.json()) as Analysis;
   } catch {

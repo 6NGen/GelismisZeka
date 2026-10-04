@@ -9,6 +9,7 @@ import ModePicker from "@/components/ModePicker";
 import ProgressSteps, { type StepState } from "@/components/ProgressSteps";
 import RadialMap from "@/components/RadialMap";
 import SerhPanel from "@/components/SerhPanel";
+import { appPath } from "@/lib/base-path";
 import { getCached } from "@/lib/cache";
 import { MODES, type ModeKey } from "@/lib/modes";
 import { safeRich } from "@/lib/sanitize";
@@ -127,7 +128,7 @@ export default function Page() {
 
       let payload: AnalyzeResponse;
       try {
-        const res = await fetch("/api/analyze", {
+        const res = await fetch(appPath("/api/analyze"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ topic, step }),

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { EXAMPLES, isCached } from "@/lib/cache";
+import { EXAMPLES } from "@/lib/cache";
 import { MAX_TOPIC, MIN_TOPIC, hasControlChars } from "@/lib/modes";
 
 type Props = {
@@ -74,35 +74,35 @@ export default function AskBar({ busy, onSubmit }: Props) {
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="lbl text-[9px] text-muted" lang="tr">
-          Hazır mevzular
-        </span>
-        {EXAMPLES.map((example) => (
-          <button
-            key={example}
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setValue(example);
-              submit(example);
-            }}
-            style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
-            className="rounded-full border px-3 py-1 text-[13px] text-ink transition-opacity hover:opacity-80 disabled:opacity-40"
-          >
-            {example}
-            {isCached(example) ? (
-              <span
-                className="ml-1.5"
-                style={{ color: "var(--gold)" }}
-                title="Önbellekte hazır — API çağrısı yapılmaz"
-              >
-                ●
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
+      {/*
+        Çipler kütüphaneden türetilir, dolayısıyla hepsi zaten hazırdır.
+        Eskiden her çipin yanında "önbellekte var" noktası dururdu; kütüphane
+        kurulduktan sonra o nokta istisnasız her çipte çıkmaya başladı ve
+        ayırt edici olmaktan çıktı. Bilgi tek seferde başlıkta veriliyor.
+      */}
+      {EXAMPLES.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="lbl text-[9px] text-muted" lang="tr">
+            Kütüphaneden
+          </span>
+          {EXAMPLES.map((example) => (
+            <button
+              key={example}
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setValue(example);
+                submit(example);
+              }}
+              title="Kütüphanede hazır — model çağrısı yapılmaz"
+              style={{ borderColor: "var(--line)", background: "var(--gold-bg)" }}
+              className="rounded-full border px-3 py-1 text-[13px] text-ink transition-opacity hover:opacity-80 disabled:opacity-40"
+            >
+              {example}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

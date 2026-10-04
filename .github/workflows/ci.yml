@@ -1,0 +1,71 @@
+name: CI
+
+# Her itme ve her pull request'te çalışır. Amaç tek: ana dalın hiçbir zaman
+# derlenmeyen ya da protokolü bozulmuş hâlde durmaması.
+#
+# Kütüphane üretimi (kutuphane.yml) buradan ayrıdır: o kota harcar ve elle
+# başlatılır, bu ise hiçbir dış servise dokunmaz ve anahtar istemez.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dogrula:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tip denetimi
+        run: npx tsc --noEmit
+
+      - name: Testler
+        run: npm test
+
+      - name: Kütüphane bütünlüğü
+        run: npm run dogrula
+
+      - name: Tam derleme
+        run: npm run build
+
+      # Statik kip ayrı bir yoldur (API dizini ağacın dışına alınır); orada
+      # bozulan bir şey tam derlemede görünmez.
+      - name: Statik derleme
+        run: npm run build:static
+        env:
+          GZ_BASE_PATH: /${{ github.event.repository.name }}
+
+      # Anahtar ve prompt metni istemci paketine giremez. Bu, yorumla değil
+      # ölçümle korunur: paket dosyalarında aranır.
+      - name: İstemci paketi sızıntı denetimi
+        run: |
+          set -e
+          bul() {
+            n=$(grep -rl "$1" .next/static/ 2>/dev/null | wc -l)
+            if [ "$n" -gt 0 ]; then
+              echo "::error::İstemci paketinde bulunmaması gereken şey bulundu: $2"
+              exit 1
+            fi
+            echo "  · $2 — yok"
+          }
+          bul "GEMINI_API_KEY" "API anahtarı değişkeni"
+          bul "generativelanguage" "sağlayıcı uç noktası"
+          bul "körü körüne" "Mîzân sistem promptu"
+          bul "yanlışlama testinden" "Mîzân kullanıcı promptu"
+          bul "ZodError" "doğrulama kitaplığı"
+          echo "İstemci paketi temiz."

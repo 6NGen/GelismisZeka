@@ -27,19 +27,10 @@ export async function POST(request: Request): Promise<NextResponse<AnalyzeRespon
     return fail("INPUT", message, 400);
   }
 
-  const verdict = checkRateLimit(clientKey(request.headers));
-  if (!verdict.allowed) {
-    return fail("RATE", "Çok fazla istek — biraz sonra tekrar deneyin.", 429, {
-      "retry-after": String(verdict.retryAfterSec),
-    });
-  }
-
   const { topic, step } = parsed.data;
 
   // Üç kademeli arama, ucuzdan pahalıya: kütüphane (kalıcı, gözden geçirilmiş)
   // → çalışma-zamanı önbelleği (süreç ömrü kadar) → model.
-  // Hız sınırından SONRA bakılır: ucuz olmaları uç noktanın sınırsız
-  // dövülmesini serbest bırakmaz.
   const kutuphaneden = kutuphaneAdimi(step, topic);
   if (kutuphaneden) {
     return NextResponse.json<AnalyzeResponse>({ ok: true, data: kutuphaneden });
@@ -48,6 +39,21 @@ export async function POST(request: Request): Promise<NextResponse<AnalyzeRespon
   const cached = getResult(step, topic);
   if (cached) {
     return NextResponse.json<AnalyzeResponse>({ ok: true, data: cached });
+  }
+
+  // Hız sınırı burada, iki ucuz kademeden SONRA uygulanır.
+  //
+  // Sınırın işi kotayı korumaktır; kütüphaneden ve önbellekten gelen cevaplar
+  // ise hiç kota harcamaz. Sınır en başta olsaydı kütüphaneyi gezen bir
+  // kullanıcı, tek bir model çağrısı doğurmadan saatlik hakkını bitirirdi —
+  // yani ücretsiz içerik, ücretli içeriği korumak için konmuş bir sayacı
+  // yakardı. Böylece sayaç "saatte 20 istek" değil, "saatte 20 MODELE ULAŞAN
+  // istek" anlamına gelir; zaten baştan kastedilen de buydu.
+  const verdict = checkRateLimit(clientKey(request.headers));
+  if (!verdict.allowed) {
+    return fail("RATE", "Çok fazla istek — biraz sonra tekrar deneyin.", 429, {
+      "retry-after": String(verdict.retryAfterSec),
+    });
   }
 
   try {

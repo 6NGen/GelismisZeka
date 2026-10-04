@@ -71,7 +71,7 @@ export class AnalyzeError extends Error {
  * Biçim tanınmazsa eski genel mesaja düşülür; tanıma başarısızlığı analizi
  * durdurmamalı.
  */
-function kotaHatasi(ham: string): AnalyzeError {
+export function kotaHatasi(ham: string): AnalyzeError {
   const gecikme = Number(/"?retryDelay"?\s*:\s*"?(\d+(?:\.\d+)?)s/.exec(ham)?.[1]);
   const saniye = Number.isFinite(gecikme) ? Math.ceil(gecikme) : undefined;
 
@@ -139,6 +139,11 @@ async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<
     ? `${buildUserPrompt(mode, topic)}\n\n${RETRY_SUFFIX}`
     : buildUserPrompt(mode, topic);
 
+  // İstemci bütçeden ÖNCE kurulur. Ters sırada, anahtarı tanımsız bir sunucu
+  // her istekte önce bir pay harcayıp sonra yapılandırma hatası fırlatır ve
+  // hiç çağrı çıkmadan günlük tavan tükenir.
+  const istemci = getClient();
+
   // Günlük tavan burada uygulanır: sayılması gereken şey istek değil, dışarı
   // çıkan model çağrısıdır — §7 tekrarı dâhil.
   if (!claimCall()) {
@@ -152,7 +157,7 @@ async function callOnce(mode: ModeKey, topic: string, isRetry = false): Promise<
   let finishReason: string | undefined;
 
   try {
-    const response = await getClient().models.generateContent({
+    const response = await istemci.models.generateContent({
       model: MODEL,
       contents: user,
       config: {

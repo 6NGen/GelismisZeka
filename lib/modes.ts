@@ -38,7 +38,13 @@ export const MODE_TABS: Record<ModeKey, string> = {
   mizan: "MÎZÂN",
 };
 
-/** Her modun istenen dal sayısı — promptla aynı olmalıdır. */
+/**
+ * Her modun istenen dal sayısı — promptta yazanla aynı olmalıdır.
+ *
+ * Şema 3-6 arasını kabul eder, çünkü model sapar ve sapma yüzünden bir adımın
+ * tamamen düşmesi istenmez. Ama kütüphaneye giren içerik gözden geçiriliyor;
+ * orada sapma sessizce kalıcılaşmasın diye doğrulayıcı uyarır.
+ */
 export const MODE_BRANCH_COUNT: Record<ModeKey, number> = {
   nedir: 4,
   nedegildir: 4,
@@ -48,10 +54,6 @@ export const MODE_BRANCH_COUNT: Record<ModeKey, number> = {
 
 export const MIN_TOPIC = 2;
 export const MAX_TOPIC = 120;
-
-export function isModeKey(v: unknown): v is ModeKey {
-  return typeof v === "string" && (MODES as readonly string[]).includes(v);
-}
 
 /**
  * Kontrol karakteri taraması. Regex yerine kod noktası döngüsü kullanılır ki

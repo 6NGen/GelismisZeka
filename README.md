@@ -40,6 +40,13 @@ kuralları ve Mîzân yalıtımı sağlayıcıdan bağımsızdır.
 
 ## İki derleme kipi
 
+| Komut | Ne yapar |
+|---|---|
+| `npm test` | Protokol, şema, güvenlik, kota ve kütüphane testleri |
+| `npm run dogrula` | Kütüphanedeki dosyaları şemadan geçirir |
+
+### Derleme kipleri
+
 | Komut | Ne üretir | Canlı analiz |
 |---|---|---|
 | `npm run build` | Tam uygulama (sunucu + `/api/analyze`) | Var |
@@ -211,6 +218,39 @@ için `outputFileTracingIncludes` ile sunucusuz pakete açıkça dâhil edilir.
 
 **Kütüphane büyüdükçe statik sürüm gerçek bir ürüne dönüşür:** GitHub Pages'te
 API anahtarı da uç nokta da yokken kütüphanedeki her mevzu tam olarak açılır.
+
+---
+
+## Testler
+
+```bash
+npm test
+```
+
+`node:test` ile çalışır, ek bağımlılık yoktur. Beş dosya, 47 denetim:
+
+| Dosya | Neyi korur |
+|---|---|
+| `protokol.test.ts` | **Mîzân yalıtımı**, iki koruma cümlesi, prompt-şema sayı eşitliği |
+| `sema.test.ts` | İçerik kuralları, mertebe/ilim şartı, görsel türleri |
+| `guvenlik.test.ts` | İki katmanlı HTML temizliği, düşmanca model çıktısı |
+| `kota.test.ts` | Günlük tavan, hız sınırı, 429 ayrımı, sonuç önbelleği |
+| `kutuphane.test.ts` | Dizin ile gövdelerin kopmaması, slug tutarlılığı |
+
+**En önemlisi `protokol.test.ts`.** Oradaki kurallar bir sadeleştirme ya da
+performans iyileştirmesiyle sessizce bozulabilecek cinstendir — Mîzân yalıtımı
+tam olarak öyle kaybolur: biri "dört çağrıyı birleştirip bağlamı taşıyalım" der
+ve protokol iptal olur. Bu yüzden kural yorumda değil, testte durur:
+`buildUserPrompt` ikiden fazla parametre alırsa test düşer.
+
+Testler mutasyonla sınandı: Mîzân yalıtımı delindiğinde, koruma cümlesi
+silindiğinde, betik süzgeci kaldırıldığında, prompt ile şemadaki kelime sınırı
+ayrıldığında, mîzân tez/karsi şartı kalktığında ve Türkçe küçültme bozulduğunda
+altı denemenin altısı da yakalandı.
+
+`.github/workflows/ci.yml` bunların tamamını her itmede çalıştırır; ayrıca
+istemci paketinde API anahtarı, sağlayıcı adresi, prompt metni ve doğrulama
+kitaplığı **bulunmadığını** ölçerek doğrular.
 
 ---
 

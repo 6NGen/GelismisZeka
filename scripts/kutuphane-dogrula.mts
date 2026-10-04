@@ -10,12 +10,13 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { MODES } from "../lib/modes";
+import { MODE_BRANCH_COUNT, MODES } from "../lib/modes";
 import { modeResultSchema } from "../lib/schema";
 
 const DIZIN = join(process.cwd(), "public", "kutuphane");
 
 let sorun = 0;
+let uyari = 0;
 let dosyaSayisi = 0;
 
 for (const dosya of readdirSync(DIZIN).filter((f) => f.endsWith(".json"))) {
@@ -46,14 +47,26 @@ for (const dosya of readdirSync(DIZIN).filter((f) => f.endsWith(".json"))) {
     if (!sonuc.success) {
       console.log(`✗ ${dosya} — ${mod}: ${sonuc.error.issues[0]?.message}`);
       sorun++;
+      continue;
+    }
+
+    // Dal sayısı sapması hata değil, uyarıdır: şema 3-6 arasını kabul eder ve
+    // sapma yüzünden adımın düşmesi istenmez. Ama kütüphaneye kalıcı olarak
+    // giren içerikte, metodun istediği sayıdan sapma gözden kaçmamalı.
+    const istenen = MODE_BRANCH_COUNT[mod];
+    const gelen = sonuc.data.branches.length;
+    if (gelen !== istenen) {
+      console.log(`! ${dosya} — ${mod}: ${istenen} dal beklenirken ${gelen} dal var`);
+      uyari++;
     }
   }
 }
 
 console.log(
   sorun === 0
-    ? `${dosyaSayisi} dosyanın tamamı şemadan geçti.`
+    ? `${dosyaSayisi} dosyanın tamamı şemadan geçti${uyari > 0 ? ` (${uyari} dal sayısı uyarısı)` : ""}.`
     : `${dosyaSayisi} dosyada ${sorun} sorun bulundu.`,
 );
 
+// Uyarı çıkışı düşürmez: dal sayısı metodun tercihi, şemanın şartı değil.
 if (sorun > 0) process.exit(1);

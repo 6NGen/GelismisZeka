@@ -4,11 +4,13 @@ name: GitHub Pages — statik tanıtım
 # statik tanıtım çıktısını yayınlar. Canlı analiz (/api/analyze) bu sürümde
 # yoktur ve hiçbir API anahtarı gerekmez.
 
+# Yalnız main. Daha önce geliştirme dalı da tetikleyiciydi; `github-pages`
+# ortamının dal kuralı yalnız main'e izin verdiği için o çalıştırmalar
+# dağıtım adımında sessizce düşüyordu.
 on:
   push:
     branches:
       - main
-      - claude/gz-dinamik-analiz-app-1wm1jz
   workflow_dispatch:
 
 permissions:

@@ -101,7 +101,7 @@ export default function Page() {
         setAnalysis(null);
         setNotice(
           "Bu tanıtım sürümü sunucusuz çalışır — canlı analiz kapalıdır. " +
-            "Hazır mevzulardan birini seçerseniz haritası önbellekten açılır.",
+            "Hazır mevzulardan birini seçerseniz haritası kütüphaneden açılır.",
         );
         setBusy(false);
         return;
@@ -177,6 +177,15 @@ export default function Page() {
   const index = result ? Math.min(selected, result.branches.length - 1) : 0;
   const branch = result?.branches[index] ?? null;
   const anyDone = MODES.some((m) => states[m] === "done");
+
+  /**
+   * Tekrar denenecek adımlar: BİTMEMİŞ olanların tamamı, yalnız düşenler değil.
+   *
+   * Hız sınırında döngü kırılır ve kalan adımlar hiç denenmeden "idle" kalır.
+   * Yalnız "error" olanlar denenseydi, kırılmanın ardındaki adımlara bir daha
+   * hiç sıra gelmez; kullanıcı "Tekrar dene"ye bassa bile haritası eksik kalırdı.
+   */
+  const pending = MODES.filter((m) => states[m] === "error" || states[m] === "idle");
   const failed = MODES.filter((m) => states[m] === "error");
 
   return (
@@ -271,7 +280,7 @@ export default function Page() {
               </p>
               <button
                 type="button"
-                onClick={() => runAnalysis(analysis.topic, failed)}
+                onClick={() => runAnalysis(analysis.topic, pending)}
                 lang="tr"
                 style={{ background: "var(--gold)", color: "#fff" }}
                 className="lbl rounded-md px-5 py-2 transition-opacity hover:opacity-90"

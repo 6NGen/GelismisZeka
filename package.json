@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "build:static": "node scripts/build-static.mjs",
-    "kutuphane": "NODE_OPTIONS=--conditions=react-server tsx scripts/kutuphane.mts"
+    "kutuphane": "NODE_OPTIONS=--conditions=react-server tsx scripts/kutuphane.mts",
+    "test": "NODE_OPTIONS=--conditions=react-server tsx --test tests/*.test.ts",
+    "dogrula": "NODE_OPTIONS=--conditions=react-server tsx scripts/kutuphane-dogrula.mts"
   },
   "dependencies": {
     "@google/genai": "^2.13.0",
